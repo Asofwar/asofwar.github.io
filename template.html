@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="ru" class="no-js">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Asofwar — индекс проектов</title>
+<meta name="description" content="Проекты Asofwar: маршрутизация для OpenWrt, Android-приложения, игровой клиент на Rust, локальные LLM и ИИ-агенты.">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Asofwar — индекс проектов">
+<meta property="og:description" content="Маршрутизация для OpenWrt, Android, игровой клиент на Rust, локальные LLM и ИИ-агенты.">
+<meta property="og:url" content="https://asofwar.github.io/">
+<meta property="og:image" content="https://asofwar.github.io/img/og.png">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="theme-color" content="#f3f1ec" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#111110" media="(prefers-color-scheme: dark)">
+<link rel="icon" href="img/favicon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="img/apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Golos+Text:wght@400;500;600&family=JetBrains+Mono:wght@400;500&family=Unbounded:wght@500;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/style.css">
+<script>document.documentElement.classList.replace('no-js', 'js');</script>
+</head>
+<body>
+
+<header class="bar">
+  <div class="wrap bar-in">
+    <a class="mark" href="#top" aria-label="Asofwar, наверх"><span class="mark-sq" aria-hidden="true"></span>ASOFWAR</a>
+    <nav class="bar-nav" aria-label="Разделы">
+      <a href="#index"><span class="n">01</span>Проекты</a>
+      <a href="#log"><span class="n">02</span>Релизы</a>
+      <a href="#contact"><span class="n">03</span>Связь</a>
+    </nav>
+  </div>
+</header>
+
+<main id="top">
+  <section class="hero wrap">
+    <div class="hero-head">
+      <p class="label">[ Индекс проектов · {{year}} ]</p>
+      <h1 class="hero-title">ASOF<span class="sig">/</span>WAR</h1>
+    </div>
+    <p class="lead">Разработчик. Делаю маршрутизацию для роутеров, Android-приложения, игровой клиент на&nbsp;Rust, локальные LLM и&nbsp;ИИ-агентов, которые играют сами.</p>
+    <dl class="board" aria-label="Сводка">
+      <div><dt>Проектов</dt><dd>{{project_count}}</dd></div>
+      <div><dt>Релизов за 30 дней</dt><dd>{{releases_30d}}</dd></div>
+      <div class="wide"><dt>Последний релиз</dt><dd class="board-last">{{last_release}}</dd></div>
+    </dl>
+  </section>
+
+  {{ticker}}
+
+  <section class="block wrap" id="index">
+    <div class="block-head">
+      <p class="label">01 — Проекты</p>
+      <h2>Индекс</h2>
+    </div>
+    <ol class="index">
+{{projects}}
+    </ol>
+  </section>
+
+  <section class="block wrap" id="log">
+    <div class="block-head">
+      <p class="label">02 — Релизы</p>
+      <h2>Журнал</h2>
+    </div>
+{{release_log}}
+  </section>
+
+  <section class="block wrap contact" id="contact">
+    <div class="block-head">
+      <p class="label">03 — Связь</p>
+      <h2>Контакт</h2>
+    </div>
+    <a class="big-link" href="https://github.com/Asofwar">github.com/Asofwar<span class="sig" aria-hidden="true"> ↗</span></a>
+    <p class="muted">Идеи, баги и вопросы по проектам — в issues нужного репозитория.</p>
+  </section>
+</main>
+
+<footer class="foot">
+  <div class="wrap foot-in">
+    <span>© {{year}} Asofwar</span>
+    <span>Сайт пересобирается автоматически. Последняя сборка: {{built_at}}</span>
+    <a href="https://github.com/Asofwar/asofwar.github.io">Исходник ↗</a>
+  </div>
+</footer>
+
+<script src="assets/main.js" defer></script>
+</body>
+</html>

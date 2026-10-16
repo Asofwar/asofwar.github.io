@@ -1,0 +1,80 @@
+{
+  "projects": [
+    {
+      "id": "prokop",
+      "title": "Prokop",
+      "kind": "Пакет для OpenWrt",
+      "summary": "Прозрачная маршрутизация и обход DPI для роутеров: sing-box, FakeIP, Zapret, автоподбор стратегий, снимки конфигурации и безопасный откат. Управление из веб-интерфейса LuCI.",
+      "stack": ["ucode", "ash", "LuCI JS"],
+      "platforms": ["OpenWrt"],
+      "status": "live",
+      "releases": "Asofwar/prokop",
+      "link": { "url": "https://asofwar.github.io/prokop/", "label": "Сайт проекта" },
+      "source": "https://github.com/Asofwar/prokop",
+      "fork_of": "slayer326/forkop",
+      "added": "2026-10-16"
+    },
+    {
+      "id": "gsm-pult",
+      "title": "GSM-Пульт",
+      "kind": "Android-приложение",
+      "summary": "Пульт для GSM-сигнализаций Signal XL: несколько объектов, команды и уведомления в одном месте, автообновление из релизов.",
+      "stack": ["Kotlin"],
+      "platforms": ["Android"],
+      "status": "live",
+      "releases": "Asofwar/GsmNotify-releases",
+      "link": { "url": "https://github.com/Asofwar/GsmNotify-releases/releases/latest", "label": "Скачать APK" },
+      "source": null,
+      "fork_of": null,
+      "added": "2026-10-16"
+    },
+    {
+      "id": "strata",
+      "title": "Strata",
+      "kind": "Локальный LLM-движок",
+      "summary": "Запуск LLM на обычном железе: установка в один клик для Windows и Linux, API в формате OpenAI и Anthropic на localhost, поддержка изображений.",
+      "stack": ["C++"],
+      "platforms": ["Windows", "Linux"],
+      "status": "live",
+      "releases": null,
+      "link": { "url": "https://github.com/Asofwar/Strata", "label": "Репозиторий" },
+      "source": "https://github.com/Asofwar/Strata",
+      "fork_of": "Niko1221/Strata",
+      "added": "2026-10-16"
+    },
+    {
+      "id": "avangardro",
+      "title": "AvangardRO",
+      "kind": "Игровой клиент",
+      "summary": "Новый клиент Ragnarok Online для сервера Avangard: собственный рендер на Rust и wgpu, интерфейс на egui, подписанные автообновления.",
+      "stack": ["Rust", "wgpu", "egui"],
+      "platforms": ["Windows", "macOS"],
+      "status": "dev",
+      "releases": "Asofwar/avangard-client-releases",
+      "link": { "url": "https://github.com/Asofwar/avangard-client-releases/releases/latest", "label": "Скачать клиент" },
+      "source": null,
+      "fork_of": null,
+      "added": "2026-10-16"
+    },
+    {
+      "id": "avaai",
+      "title": "AVAAI",
+      "kind": "ИИ-агенты",
+      "summary": "Автономные агенты для сервера Ragnarok Online: играют через настоящий игровой протокол, ходят, сражаются и торгуют, учатся в цифровом двойнике сервера и переносят навыки обратно на реальный сервер.",
+      "stack": ["Python", "Docker"],
+      "platforms": ["Linux"],
+      "status": "research",
+      "releases": null,
+      "link": null,
+      "source": null,
+      "fork_of": null,
+      "added": "2026-10-16"
+    }
+  ],
+  "ignore": [
+    { "repo": "Asofwar/GsmNotify-releases", "reason": "Канал релизов GSM-Пульта, уже на сайте" },
+    { "repo": "Asofwar/avangard-client-releases", "reason": "Канал релизов AvangardRO, уже на сайте" },
+    { "repo": "Asofwar/asofwar.github.io", "reason": "Этот сайт" },
+    { "repo": "Asofwar/List", "reason": "Служебный список" }
+  ]
+}
