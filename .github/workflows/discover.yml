@@ -1,0 +1,38 @@
+name: Discover new projects
+
+# Runs one hour before the weekly cloud agent (Monday 07:00 UTC),
+# which reads data/candidates.json written here.
+on:
+  schedule:
+    - cron: "0 6 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: discover
+  cancel-in-progress: false
+
+jobs:
+  discover:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Snapshot candidate repositories
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: python3 scripts/discover.py
+
+      - name: Commit snapshot if it changed
+        run: |
+          if [ -z "$(git status --porcelain -- data/candidates.json)" ]; then
+            echo "candidates.json unchanged"
+            exit 0
+          fi
+          git config user.name "Asofwar"
+          git config user.email "7397608+Asofwar@users.noreply.github.com"
+          git add data/candidates.json
+          git commit -m "Обновлён список кандидатов"
+          git push

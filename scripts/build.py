@@ -14,15 +14,14 @@ import argparse
 import hashlib
 import html
 import json
-import os
 import random
 import re
 import shutil
 import sys
-import urllib.error
-import urllib.request
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
+
+import ghapi
 
 ROOT = Path(__file__).resolve().parent.parent
 MSK = timezone(timedelta(hours=3))
@@ -79,24 +78,8 @@ def load_projects() -> list[dict]:
 # ---------- GitHub releases ----------
 
 def fetch_releases(repo: str) -> list[dict]:
-    url = f"https://api.github.com/repos/{repo}/releases?per_page=10"
-    req = urllib.request.Request(url, headers={
-        "Accept": "application/vnd.github+json",
-        "User-Agent": "asofwar-site-build",
-        "X-GitHub-Api-Version": "2022-11-28",
-    })
-    token = os.environ.get("GITHUB_TOKEN")
-    if token:
-        req.add_header("Authorization", f"Bearer {token}")
-    try:
-        with urllib.request.urlopen(req, timeout=30) as resp:
-            items = json.load(resp)
-    except urllib.error.HTTPError as e:
-        sys.exit(f"GitHub API {repo}: HTTP {e.code} {e.reason}")
-    except urllib.error.URLError as e:
-        sys.exit(f"GitHub API {repo}: {e.reason}")
     out = []
-    for r in items:
+    for r in ghapi.get(f"/repos/{repo}/releases?per_page=10"):
         if r.get("draft") or not r.get("published_at"):
             continue
         out.append({
