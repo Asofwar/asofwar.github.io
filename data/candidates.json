@@ -1,0 +1,61 @@
+{
+  "generated_at": "2026-10-16T11:17:26Z",
+  "candidates": [
+    {
+      "repo": "Asofwar/flint2-openwrt",
+      "url": "https://github.com/Asofwar/flint2-openwrt",
+      "description": "",
+      "homepage": "",
+      "language": "Shell",
+      "topics": [],
+      "pushed_at": "2026-08-25",
+      "releases": [
+        {
+          "version": "flint2-openwrt-v25.12.5-f0a60eee",
+          "date": "2026-08-21",
+          "pre": false
+        }
+      ],
+      "readme_excerpt": "# Flint 2 Custom OpenWrt\n\nВоспроизводимая сборка стабильного upstream OpenWrt для GL.iNet Flint 2\n(GL-MT6000, MT7986 / Filogic 830). Образ сохраняет штатный GL.iNet bootloader\nи OEM recovery, не содержит учётных данных и рассчитан на домашний роутер:\nполный LuCI на русском языке, WireGuard, AmneziaWG, Podkop, full sing-box,\nfirewall4/nftables, IPv6, PPPoE и штатный Wi-Fi/Ethernet стек OpenWrt.\n\n## Hardware\n\n| Поле | Значение |\n| --- | --- |\n| устройство | `glinet_gl-mt6000` |\n| target/subtarget | `mediatek/filogic` |\n| архитектура | `aarch64_cortex-a53` |\n| SoC | MediaTek MT7986 / Filogic 830 |\n\nЭто не GL.iNet SDK и не штатная прошивка GL.iNet с заменённым UI. Базой служит\nофициальный device recipe OpenWrt, поэтому используются только её\n`factory.bin` и `sysupgrade.bin` для GL-MT6000.\n\n## Versions\n\n| Компонент | Зафиксированная версия |\n| --- | --- |\n| OpenWrt | `v25.12.5`, `f0a60eee2fe051741c643ea6118718aae1ef17fb` |\n| kernel | `6.12.94` |\n| AmneziaWG feed | `98b9eaf21f43c1cc54104072f2dce5c9c847f801` |\n| Podkop | `0.7.22`, `c0a2736bb95884c19fedf638345ed6148c5fd6af` |\n| sing-box | upstream package `1.12.17` |\n\nПолный список immutable revisions — в [`scripts/versions.env`](scripts/versions.env).\n\n## Differences from vanilla OpenWrt\n\nВ образ добавлены LuCI, HTTPS, русский язык, `dnsmasq-full`, PPPoE, DSA/VLAN,\nIPv6, WPA2/WPA3, WireGuard, AmneziaWG 2.x, Podkop и его LuCI, full `sing-box`,\n`kmod-nft-tproxy`, диагностика и QoS/SQM. Конфликтующие с Podkop пакеты\n`https-dns-proxy`, `nextdns`, Passwall и Passwall2 не включены.\n\n## Pesa1234 patches and Wi-Fi stack\n\n`pesa1234/openwrt` и связанные mt76/LuCI деревья были исследованы. Их\nрелевантная ветка основана на kernel 4.9 и не совместима с OpenWrt 25.12 /\nkernel 6.12. Поэтому Wi-Fi, mac80211, firmware, Ethernet и kernel ABI берутся\nиз одного upstream tree; непроверенные WED/PPE/RSS/256-QAM/iBF/EDCCA изменения\nне переносятся. Это сознательный выбор стабильности и корректной policy\nrouting. Обоснование и оба минимальных compatibility patch — в\n[`docs/HARDWARE_STACK.md`](docs/HARDWARE_STACK.md).\n\nСоответствие собственного VPN Dashboard пользовательским сценариям GL.iNet и\nосознанные границы без GL SDK описаны в\n[`docs/VPN_DASHBOARD_COMPARISON.md`](docs/VPN_DASHBOARD_COMPARISON.md).\n\nАппаратный offload не включается принудительно. При Podkop/TProxy/VPN policy\nrouting он может обходить правила. Сначала проверьте selective routing, затем\nпри необходимости тестируйте software/hardware flow offload отдельно; при\nошибках отключите offload и очистите conntrack.\n\n## Build locally\n\n### Windows + Docker Desktop\n\nВ PowerShell из корня репозитория:\n\n```powershell\n.\\build-docker.ps1\n```\n\nИсходники OpenWrt и кэш находятся в named Docker volume, а не в OneDrive/NTFS.\nДля другого числа потоков: `.\\build-docker.ps1 -Jobs 12`.\n\n### Linux\n\nПоддерживаемая воспроизводимая среда — Dockerfile проекта:\n\n```bash\ndocker build --tag flint2-openwrt-builder:25.12.5 .\ndocker run --rm --user builder \\\n  --mount type=bind,src=\"$PWD\",dst=/workspace \\\n  flint2-openwrt-builder:25.12.5 ./build.sh\n```\n\n`build.sh` фиксирует OpenWrt и feeds, применяет строго два compatibility patch,\nвызывает `make defconfig`, загружает исходники, собирает image и выполняет\nпроверку. Он прекращает работу при несовпадении pin или непригодности patch.\n\n## Virtual x86_64 / QEMU test target\n\nVirtual target отделён от production: он собирает OpenWrt `x86_64` с тем же\nVPN userspace, но не является прошивкой Flint 2 и не должен публиковаться или\nпрошиваться на GL-MT6000. Он нужен для проверки LuCI, Dashboard, firewall4,\nPodkop и target-совместимого `kmod-amneziawg` без доступа к физическому\nроутеру.\n\nВ Windows PowerShell:\n\n```powershell\n.\\build-vm.ps1\n.\\test-vm.ps1\n```\n\nПервая команда создаёт артефакты только в `artifacts/vm/`; вторая запускает\nполный QEMU-набор: базовый runtime/reboot, внешний AmneziaWG outbound,\nсравнение Same as LAN / Podkop и изолированное создание/восстановление\nрезервной копии через штатные `sysupgrade -b`/`sysupgrade -r`. Ито"
+    },
+    {
+      "repo": "Asofwar/AjazzBatteryMonitor",
+      "url": "https://github.com/Asofwar/AjazzBatteryMonitor",
+      "description": "",
+      "homepage": "",
+      "language": "C#",
+      "topics": [],
+      "pushed_at": "2026-08-06",
+      "releases": [
+        {
+          "version": "v1.3.5",
+          "date": "2026-07-24",
+          "pre": false
+        },
+        {
+          "version": "v1.3.4",
+          "date": "2026-07-24",
+          "pre": false
+        },
+        {
+          "version": "v1.3.3",
+          "date": "2026-07-24",
+          "pre": false
+        }
+      ],
+      "readme_excerpt": "# AJAZZ Battery Monitor\n\nAJAZZ Battery Monitor is a Windows 10/11 x64 tray application for monitoring the battery of an AJAZZ AJ179 APEX mouse. It tries Bluetooth LE Battery Service (`0x180F` / `0x2A19`) first and only uses the HID Feature Report fallback for an explicitly approved control collection.\n\n## Status\n\nThe target version is `1.3.4`. Version metadata is centralized in `Directory.Build.props`.\n\nHardware support is intentionally conservative: a successful real-device read is required before claiming that a transport is supported. CI runs non-hardware tests only; it cannot validate a physical mouse.\n\n## Build and test\n\nRequirements: Windows 10/11 and .NET SDK 8.\n\n```powershell\ndotnet restore AjazzBattery.sln --locked-mode\ndotnet build AjazzBattery.sln --configuration Release --no-restore\ndotnet test AjazzBattery.sln --configuration Release --no-build --filter \"Category!=Hardware\"\n```\n\nTo create a self-contained portable executable:\n\n```powershell\npowershell -ExecutionPolicy Bypass -File .\\scripts\\publish.ps1\npowershell -ExecutionPolicy Bypass -File .\\scripts\\package.ps1\n```\n\nThe optional per-user installer is built with Inno Setup 6:\n\n```powershell\npowershell -ExecutionPolicy Bypass -File .\\scripts\\build-installer.ps1\n```\n\nIt installs to `%LocalAppData%\\Programs\\AJAZZ Battery Monitor` without UAC. User settings and history remain under `%LocalAppData%\\AjazzBatteryMonitor` and are preserved by default on upgrade and uninstall.\n\n## Privacy\n\nDo not publish Bluetooth MAC addresses, full BLE identifiers, HID paths, serial numbers, local paths, logs, diagnostic archives, settings or battery history in issues, releases or pull requests. The project contains no screenshots, images or UI captures.\n\n## Code signing\n\nRelease binaries are unsigned unless a release workflow receives the configured signing secrets. Unsigned Windows executables can show a SmartScreen warning.\n\n## License\n\nLicensed under [GPL-3.0-or-later](LICENSE), a dependency-compatible copyleft license. This is an independent implementation with documented protocol provenance; the audit is retained for traceability and does not remove the GPL obligations.\n"
+    },
+    {
+      "repo": "Asofwar/real-1-20-1-packwiz",
+      "url": "https://github.com/Asofwar/real-1-20-1-packwiz",
+      "description": "Packwiz modpack for Real 1-20-1 Mac client auto-updates",
+      "homepage": "",
+      "language": "GLSL",
+      "topics": [],
+      "pushed_at": "2026-06-28",
+      "releases": [],
+      "readme_excerpt": "# Real 1.20.1 Client\n\nЭто локальный клиентский инстанс Minecraft `1.20.1` для Prism Launcher с Fabric `0.16.10`.\n\nВнутри:\n- `mods/` - основной набор модов клиента\n- `config/` - клиентские и общие конфиги модов\n- `kubejs/` - кастомные скрипты и ресурсы KubeJS\n- `resourcepacks/` - ресурспаки, включая русские переопределения\n- `shaderpacks/` - набор шейдеров\n- `packwiz-installer.jar` и `packwiz-prelaunch.ps1` - обновление инстанса через Packwiz перед запуском\n\nЧто важно:\n- Это уже распакованный и готовый к запуску инстанс, а не чистый `packwiz`-репозиторий.\n- Источник обновлений задан в [instance.cfg](D:/MineClient/workspace/instance.cfg) через `PreLaunchCommand`.\n- Папка `mods/.index/` используется Packwiz как локальный кэш и не является дублем \"по ошибке\".\n\nЧто было почищено:\n- удалены временные и кэш-файлы, которые создаются во время запуска клиента\n- восстановлена читаемая документация вместо файла с битой кодировкой\n\nЕсли нужно дальше оптимизировать клиент, логично идти в таком порядке:\n1. Проверить конфликтные или лишние моды с ручными именами вроде `(1)`.\n2. Свести к минимуму кэши и временные данные перед упаковкой или переносом.\n3. Отдельно пересобрать Packwiz-репозиторий, если нужен именно управляемый удалённый пак.\n"
+    }
+  ],
+  "status_hints": []
+}
