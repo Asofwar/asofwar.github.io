@@ -69,12 +69,41 @@
       "source": null,
       "fork_of": null,
       "added": "2026-10-16"
+    },
+    {
+      "id": "flint2-openwrt",
+      "title": "Flint 2 Custom OpenWrt",
+      "kind": "Прошивка для роутера",
+      "summary": "Воспроизводимая сборка стабильного OpenWrt для GL.iNet Flint 2 (GL-MT6000): LuCI на русском, WireGuard, AmneziaWG, Podkop и sing-box, штатный загрузчик и recovery сохранены.",
+      "stack": ["Shell", "OpenWrt", "Docker"],
+      "platforms": ["GL.iNet Flint 2"],
+      "status": "live",
+      "releases": "Asofwar/flint2-openwrt",
+      "link": { "url": "https://github.com/Asofwar/flint2-openwrt/releases/latest", "label": "Скачать" },
+      "source": "https://github.com/Asofwar/flint2-openwrt",
+      "fork_of": null,
+      "added": "2026-10-16"
+    },
+    {
+      "id": "ajazz-battery-monitor",
+      "title": "AJAZZ Battery Monitor",
+      "kind": "Приложение для трея",
+      "summary": "Показывает заряд батареи мыши AJAZZ AJ179 APEX в трее Windows 10/11: сначала через Bluetooth LE Battery Service, с запасным вариантом через HID.",
+      "stack": ["C#", ".NET 8"],
+      "platforms": ["Windows"],
+      "status": "live",
+      "releases": "Asofwar/AjazzBatteryMonitor",
+      "link": { "url": "https://github.com/Asofwar/AjazzBatteryMonitor/releases/latest", "label": "Скачать" },
+      "source": "https://github.com/Asofwar/AjazzBatteryMonitor",
+      "fork_of": null,
+      "added": "2026-10-16"
     }
   ],
   "ignore": [
     { "repo": "Asofwar/GsmNotify-releases", "reason": "Канал релизов GSM-Пульта, уже на сайте" },
     { "repo": "Asofwar/avangard-client-releases", "reason": "Канал релизов AvangardRO, уже на сайте" },
     { "repo": "Asofwar/asofwar.github.io", "reason": "Этот сайт" },
-    { "repo": "Asofwar/List", "reason": "Служебный список" }
+    { "repo": "Asofwar/List", "reason": "Служебный список" },
+    { "repo": "Asofwar/real-1-20-1-packwiz", "reason": "Личный клиентский инстанс Minecraft с модами и конфигами, не проект" }
   ]
 }
