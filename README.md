@@ -98,3 +98,18 @@ uvx --from "fonttools[woff]" fonttools varLib.instancer <name>.sub.woff2 wght=<l
 
 Схема проверяется в `scripts/schema.py`: `build.py` печатает все ошибки списком и
 завершается с кодом 1. Новое поле сначала добавляется в `ALLOWED` в `scripts/schema.py`.
+
+## Снимок кандидатов
+
+`data/candidates.json` пишет `scripts/discover.py`, руками его не правят. Внутри — `generated_at`,
+`candidates[]` и `status_hints[]`.
+
+- `candidates[]` — публичные неархивные репозитории Asofwar с push за 120 дней, которых ещё нет в
+  `projects` и `ignore`: `{ repo, url, description, homepage, language, topics, pushed_at,
+  releases, readme_excerpt, fork_of }`. `releases` — до 3 последних релизов
+  `{ version, date, pre }`, `fork_of` — `"owner/repo"` upstream для форка, иначе `null`.
+- Форки попадают в кандидаты, только если у них есть свой релиз за 120 дней.
+- Репозитории из `projects` и `ignore` сверяются и по текущему имени, поэтому
+  переименованный репозиторий не возвращается кандидатом.
+- `status_hints[]` — `{ id, suggest_status, version }`: проект в статусе `dev`, у которого
+  вышел стабильный релиз 1.0 или новее.

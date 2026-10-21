@@ -2,6 +2,9 @@
 
 Runs in GitHub Actions (the cloud agent cannot list the owner's repositories itself).
 The agent then reads the snapshot and decides which candidates become project cards.
+Forks are taken only if they have an own release within ACTIVE_DAYS; their fork_of names
+the upstream. Repositories already on the site are also matched by their current name,
+so a renamed repository does not come back as a new candidate.
 
 Usage:
     python scripts/discover.py
@@ -83,26 +86,46 @@ def is_stable_1x(version: str) -> bool:
 def main() -> None:
     data = json.loads((ROOT / "data" / "projects.json").read_text(encoding="utf-8"))
     known = known_repos(data)
+    site = f"{OWNER}/{OWNER}.github.io".lower()
+    # Canonical names: a renamed repository is listed under its new name, while the data may
+    # still hold the old one (GitHub keeps a 301 redirect, urllib follows it). The old name
+    # stays in known too. A deleted or private repository answers 404 and is skipped.
+    for name in sorted(known - {site}):
+        meta = ghapi.get(f"/repos/{name}", allow_404=True)
+        if meta is not None:
+            known.add(meta["full_name"].lower())
     cutoff = datetime.now(timezone.utc) - timedelta(days=ACTIVE_DAYS)
 
     candidates = []
     for r in list_repos():
         pushed = datetime.fromisoformat(r["pushed_at"].replace("Z", "+00:00"))
-        if r["fork"] or r["archived"] or r["private"] or pushed < cutoff:
+        if r["archived"] or r["private"] or pushed < cutoff:
             continue
         if r["full_name"].lower() in known:
             continue
+        rels = releases_of(r["full_name"])
+        fork_of = None
+        homepage = r.get("homepage") or ""
+        if r["fork"]:
+            # Forks only with an own release within ACTIVE_DAYS (mirrors of upstream have none).
+            if not rels or datetime.fromisoformat(rels[0]["date"]).replace(tzinfo=timezone.utc) < cutoff:
+                continue
+            parent = ghapi.get(f"/repos/{r['full_name']}")["parent"]
+            fork_of = parent["full_name"]
+            if homepage == (parent.get("homepage") or ""):
+                homepage = ""  # inherited upstream site, not the fork's own
         readme = ghapi.get(f"/repos/{r['full_name']}/readme", raw=True, allow_404=True) or ""
         candidates.append({
             "repo": r["full_name"],
             "url": r["html_url"],
             "description": r.get("description") or "",
-            "homepage": r.get("homepage") or "",
+            "homepage": homepage,
             "language": r.get("language") or "",
             "topics": r.get("topics") or [],
             "pushed_at": r["pushed_at"][:10],
-            "releases": releases_of(r["full_name"]),
+            "releases": rels,
             "readme_excerpt": readme[:README_LIMIT],
+            "fork_of": fork_of,
         })
 
     # Status hints: a project in development whose latest stable release reached 1.0.
