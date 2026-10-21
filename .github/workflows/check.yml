@@ -1,0 +1,22 @@
+name: Check
+
+# Checks a pull request (including the cloud agent's own PR, which it may merge itself)
+# without deploying: unit tests and an offline build that validates data/projects.json.
+on:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Unit tests
+        run: python3 -m unittest discover -s scripts -p "test_*.py" -v
+
+      - name: Offline build
+        run: python3 scripts/build.py --offline

@@ -19,8 +19,10 @@
 | `scripts/schema.py` | Строгая проверка `data/projects.json`, её вызывает `build.py` |
 | `scripts/discover.py` | Поиск новых репозиториев → `data/candidates.json` |
 | `scripts/ghapi.py` | Мини-клиент GitHub REST API |
+| `scripts/test_build.py` | Юнит-тесты скриптов |
 | `.github/workflows/site.yml` | Сборка и деплой в GitHub Pages |
 | `.github/workflows/discover.yml` | Еженедельный снимок кандидатов |
+| `.github/workflows/check.yml` | Тесты и офлайн-сборка для pull request |
 | `agent/update-projects.md` | Инструкция облачного агента, который добавляет новые проекты |
 
 ## Локальная сборка
@@ -32,6 +34,15 @@ python -m http.server 8765 -d _site
 ```
 
 Журнал склеивает релизы одного проекта за день и показывает не больше 3 групп на проект (`LOG_PER_PROJECT` в `build.py`).
+
+## Тесты
+
+```bash
+python3 -m unittest discover -s scripts -p "test_*.py" -v
+```
+
+Тесты в `scripts/test_build.py`: только stdlib, без сети, меньше секунды. Их запускают
+`site.yml` перед сборкой и `check.yml` вместе с `build.py --offline` на каждый pull request.
 
 ## Шрифты
 
