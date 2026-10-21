@@ -97,6 +97,34 @@
       "source": "https://github.com/Asofwar/AjazzBatteryMonitor",
       "fork_of": null,
       "added": "2026-10-16"
+    },
+    {
+      "id": "freebrush",
+      "title": "FreeBrush",
+      "kind": "Android-приложение",
+      "summary": "Приложение для умных зубных щёток Oclean без аккаунта и облака: читает историю чистки по Bluetooth LE и хранит её на телефоне. 3D-модель челюсти, серии, свои программы чистки, экспорт в CSV.",
+      "stack": ["Kotlin", "Jetpack Compose", "Bluetooth LE"],
+      "platforms": ["Android 12+"],
+      "status": "live",
+      "releases": "Asofwar/freebrush",
+      "link": { "url": "https://github.com/Asofwar/freebrush/releases/latest", "label": "Скачать" },
+      "source": "https://github.com/Asofwar/freebrush",
+      "fork_of": null,
+      "added": "2026-10-21"
+    },
+    {
+      "id": "speedbreaker-hle",
+      "title": "SpeedBreaker HLE",
+      "kind": "Форк для Steam Deck",
+      "summary": "Форк SpeedBreaker с оптимизацией рендера под Steam Deck на 5 Вт: сборки для консоли, которые снижают нагрузку на графику при низком энергопотреблении и экономят заряд батареи.",
+      "stack": ["C++"],
+      "platforms": ["Steam Deck"],
+      "status": "live",
+      "releases": "Asofwar/speedbreaker-hle",
+      "link": { "url": "https://github.com/Asofwar/speedbreaker-hle/releases/latest", "label": "Скачать" },
+      "source": "https://github.com/Asofwar/speedbreaker-hle",
+      "fork_of": "SpeedBreakerProject/speedbreaker",
+      "added": "2026-10-21"
     }
   ],
   "ignore": [
