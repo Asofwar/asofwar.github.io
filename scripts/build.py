@@ -22,6 +22,7 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 import ghapi
+import schema
 
 ROOT = Path(__file__).resolve().parent.parent
 MSK = timezone(timedelta(hours=3))
@@ -34,7 +35,6 @@ STATUS = {
     "dev": "В разработке",
     "research": "Исследование",
 }
-REQUIRED = ("id", "title", "kind", "summary", "stack", "platforms", "status")
 
 
 def esc(value: object) -> str:
@@ -83,27 +83,18 @@ def releases_repo(p: dict) -> tuple[str | None, bool]:
 # ---------- data ----------
 
 def load_projects() -> list[dict]:
-    data = json.loads((ROOT / "data" / "projects.json").read_text(encoding="utf-8"))
-    projects = data.get("projects")
-    if not isinstance(projects, list) or not projects:
-        sys.exit("data/projects.json: 'projects' must be a non-empty list")
-    seen: set[str] = set()
-    for i, p in enumerate(projects):
-        where = f"data/projects.json: projects[{i}]"
-        for key in REQUIRED:
-            if key not in p or p[key] in (None, "", []):
-                sys.exit(f"{where}: missing '{key}'")
-        if p["status"] not in STATUS:
-            sys.exit(f"{where}: status must be one of {', '.join(STATUS)}")
-        if not isinstance(p["stack"], list) or not isinstance(p["platforms"], list):
-            sys.exit(f"{where}: 'stack' and 'platforms' must be lists")
-        if p["id"] in seen:
-            sys.exit(f"{where}: duplicate id '{p['id']}'")
-        seen.add(p["id"])
-        link = p.get("link")
-        if link is not None and not (isinstance(link, dict) and link.get("url") and link.get("label")):
-            sys.exit(f"{where}: 'link' must be null or {{url, label}}")
-    return projects
+    path = ROOT / "data" / "projects.json"
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError as e:
+        sys.exit(f"data/projects.json: invalid JSON: {e}")
+    errors = schema.validate(data, STATUS)
+    if errors:
+        print("data/projects.json: validation failed", file=sys.stderr)
+        for error in errors:
+            print(f"  {error}", file=sys.stderr)
+        sys.exit(1)
+    return data["projects"]
 
 
 # ---------- GitHub releases ----------

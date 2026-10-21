@@ -6,14 +6,17 @@ The agent then reads the snapshot and decides which candidates become project ca
 Usage:
     python scripts/discover.py
 
-The file is rewritten only when candidates or status hints change, so a quiet week
-produces no commit.
+The file is rewritten when candidates or status hints change, so a quiet week
+produces no commit. Even without changes the snapshot is rewritten (new generated_at)
+at least every KEEPALIVE_DAYS, so GitHub does not disable the scheduled workflows
+after 60 days without repository activity.
 """
 
 from __future__ import annotations
 
 import json
 import re
+import sys
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
@@ -23,23 +26,35 @@ ROOT = Path(__file__).resolve().parent.parent
 OWNER = "Asofwar"
 ACTIVE_DAYS = 120
 README_LIMIT = 4000
+KEEPALIVE_DAYS = 28
 OUT = ROOT / "data" / "candidates.json"
 
 
-def repo_of(url: str | None) -> str | None:
-    m = re.match(r"https://github\.com/([^/]+/[^/#?]+)", url or "")
+def repo_of(url: object) -> str | None:
+    m = re.match(r"https://github\.com/([^/]+/[^/#?]+)", url if isinstance(url, str) else "")
     return m.group(1).lower() if m else None
 
 
 def known_repos(data: dict) -> set[str]:
+    """Repositories already on the site or ignored. Bad entries are skipped here;
+    build.py rejects them when the agent validates its change."""
     known = {f"{OWNER}/{OWNER}.github.io".lower()}
-    for p in data["projects"]:
-        for value in (p.get("releases"), repo_of(p.get("source")),
-                      repo_of((p.get("link") or {}).get("url"))):
+    for p in data.get("projects") or []:
+        if not isinstance(p, dict):
+            continue
+        link = p.get("link")
+        releases = p.get("releases")
+        for value in (releases if isinstance(releases, str) and releases else None,
+                      repo_of(p.get("source")),
+                      repo_of(link.get("url") if isinstance(link, dict) else None)):
             if value:
                 known.add(value.lower())
-    for item in data.get("ignore", []):
-        known.add(item["repo"].lower())
+    for item in data.get("ignore") or []:
+        repo = item.get("repo") if isinstance(item, dict) else None
+        if isinstance(repo, str) and repo:
+            known.add(repo.lower())
+        else:
+            print(f"warning: skipped ignore entry {item!r}", file=sys.stderr)
     return known
 
 
@@ -92,8 +107,8 @@ def main() -> None:
 
     # Status hints: a project in development whose latest stable release reached 1.0.
     hints = []
-    for p in data["projects"]:
-        if p["status"] != "dev" or not p.get("releases"):
+    for p in data.get("projects") or []:
+        if not isinstance(p, dict) or p.get("status") != "dev" or not isinstance(p.get("releases"), str):
             continue
         stable = [x for x in releases_of(p["releases"], limit=10) if not x["pre"]]
         if stable and is_stable_1x(stable[0]["version"]):
@@ -102,7 +117,14 @@ def main() -> None:
     payload = {"candidates": candidates, "status_hints": hints}
     if OUT.exists():
         previous = json.loads(OUT.read_text(encoding="utf-8"))
-        if {k: previous.get(k) for k in payload} == payload:
+        # Age in calendar days (UTC), so the weekly run on day 28 rewrites the file even
+        # when it starts a few minutes earlier than the run that wrote it.
+        try:
+            generated = datetime.fromisoformat(str(previous.get("generated_at") or "").replace("Z", "+00:00"))
+            age_days = (datetime.now(timezone.utc).date() - generated.astimezone(timezone.utc).date()).days
+        except (ValueError, OverflowError):
+            age_days = KEEPALIVE_DAYS
+        if {k: previous.get(k) for k in payload} == payload and age_days < KEEPALIVE_DAYS:
             print(f"no changes: {len(candidates)} candidates, {len(hints)} status hints")
             return
     document = {"generated_at": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"), **payload}
