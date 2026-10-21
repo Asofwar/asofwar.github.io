@@ -1,3 +1,13 @@
+/* Self-hosted subsets (assets/fonts, OFL), root paths so they also work inlined into the page. */
+@font-face{font-family:"Unbounded";src:url(/assets/fonts/unbounded.woff2) format("woff2");font-weight:700 800;font-display:swap}
+@font-face{font-family:"Golos Text";src:url(/assets/fonts/golos.woff2) format("woff2");font-weight:400 500;font-display:swap}
+@font-face{font-family:"JetBrains Mono";src:url(/assets/fonts/jbmono.woff2) format("woff2");font-weight:400 500;font-display:swap}
+/* Metric fallbacks: a system font sized like the web font, so the swap does not move the layout.
+   Unbounded: Arial Bold at 132% keeps ASOF/WAR (weight 800) on one line, like the web font. */
+@font-face{font-family:"Unbounded Fallback";src:local("Arial Bold"),local("Arial-BoldMT"),local("Liberation Sans Bold"),local("LiberationSans-Bold");font-weight:700 800;size-adjust:132%;ascent-override:75.4%;descent-override:18.6%;line-gap-override:0%}
+@font-face{font-family:"Golos Fallback";src:local("Arial"),local("Liberation Sans");size-adjust:105.9%;ascent-override:92.5%;descent-override:20.8%;line-gap-override:0%}
+@font-face{font-family:"Mono Fallback";src:local("Consolas");size-adjust:109.1%;ascent-override:93.5%;descent-override:27.5%;line-gap-override:0%}
+
 :root {
   --paper: #f3f1ec;
   --paper-2: #ebe8e0;
@@ -13,9 +23,9 @@
   --live: #2f9e5b;
   --dev: #d49a00;
   --research: #6a6ad8;
-  --display: "Unbounded", "Segoe UI", sans-serif;
-  --body: "Golos Text", -apple-system, "Segoe UI", Roboto, sans-serif;
-  --mono: "JetBrains Mono", Consolas, Menlo, monospace;
+  --display: "Unbounded", "Unbounded Fallback", "Segoe UI", sans-serif;
+  --body: "Golos Text", "Golos Fallback", -apple-system, "Segoe UI", Roboto, sans-serif;
+  --mono: "JetBrains Mono", "Mono Fallback", Consolas, Menlo, monospace;
   color-scheme: light;
 }
 

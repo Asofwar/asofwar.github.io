@@ -436,7 +436,15 @@ def build(offline: bool, out: Path) -> None:
         last = NO_RELEASES
 
     page = (ROOT / "template.html").read_text(encoding="utf-8")
+    # CSS and JS go into the page itself: no render-blocking request, and the .js class
+    # never arrives without the script that reveals .reveal.
+    css = (ROOT / "assets" / "style.css").read_text(encoding="utf-8")
+    js = (ROOT / "assets" / "main.js").read_text(encoding="utf-8").strip()
+    if "</style" in css.lower() or "</script" in js.lower():
+        sys.exit("assets: closing tag inside inlined file")
     values = {
+        "inline_css": css,
+        "inline_js": js,
         "year": str(now.astimezone(MSK).year),
         "project_count": str(len(projects)),
         "releases_30d": f"{recent}{suffix}",
@@ -457,7 +465,7 @@ def build(offline: bool, out: Path) -> None:
         shutil.rmtree(out)
     out.mkdir(parents=True)
     (out / "index.html").write_text(page, encoding="utf-8")
-    shutil.copytree(ROOT / "assets", out / "assets")
+    shutil.copytree(ROOT / "assets", out / "assets")  # assets/fonts are still served as files
     shutil.copytree(ROOT / "img", out / "img")
     print(f"built {out / 'index.html'}: {len(projects)} projects, {len(log)} releases")
 

@@ -12,7 +12,7 @@
 |---|---|
 | `data/projects.json` | Проекты (`projects`) и репозитории, которые не надо показывать (`ignore`) |
 | `template.html` | Разметка страницы с плейсхолдерами `{{...}}` |
-| `assets/` | CSS и JS |
+| `assets/` | CSS и JS (сборка встраивает их в страницу), шрифты в `assets/fonts/` |
 | `img/` | Иконки и og-картинка |
 | `data/candidates.json` | Снимок новых публичных репозиториев для агента (пишет `discover.yml`) |
 | `scripts/build.py` | Сборка: данные + релизы → `_site/` |
@@ -32,6 +32,33 @@ python -m http.server 8765 -d _site
 ```
 
 Журнал склеивает релизы одного проекта за день и показывает не больше 3 групп на проект (`LOG_PER_PROJECT` в `build.py`).
+
+## Шрифты
+
+Unbounded, Golos Text и JetBrains Mono отдаются с этого же домена из `assets/fonts/`,
+без Google Fonts. Это подмножества вариативных шрифтов из [google/fonts](https://github.com/google/fonts)
+(ветка `main`): `ofl/unbounded/Unbounded[wght].ttf`, `ofl/golostext/GolosText[wght].ttf`,
+`ofl/jetbrainsmono/JetBrainsMono[wght].ttf`. Лицензия — SIL Open Font License 1.1,
+текст и copyright всех трёх семейств в `assets/fonts/OFL.txt`.
+
+Пересборка: сначала subset, потом instancer, именно в таком порядке (на полном Golos
+instancer падает с `KeyError`). `--layout-features` не задавать: набор по умолчанию
+сохраняет `rlig`/`rvrn` и альтернативы Unbounded для веса 800.
+
+```bash
+uvx --from "fonttools[woff]" pyftsubset <ttf> --flavor=woff2 --unicodes="U+0020-007E,U+00A0-00FF,U+0131,U+0152-0153,U+02C6,U+02DA,U+02DC,U+0400-045F,U+0490-0491,U+2010-2027,U+2030-203A,U+20AC,U+20BD,U+2116,U+2122,U+2190-2199,U+2212,U+25CF" --output-file=<name>.sub.woff2
+uvx --from "fonttools[woff]" fonttools varLib.instancer <name>.sub.woff2 wght=<lo>:<hi> -o assets/fonts/<name>.woff2
+```
+
+`<name>` и `wght`: `unbounded` 700:800, `golos` 400:500, `jbmono` 400:500. Другие начертания
+в CSS не используются; новое начертание требует расширить диапазон здесь и `font-weight` в `@font-face`.
+
+Символы вне диапазона рисуются системным шрифтом. Для польских и подобных букв
+диапазон расширяется на `U+0100-024F` (+10–15 КБ на файл).
+
+Метрические fallback-шрифты (`Unbounded Fallback`, `Golos Fallback`, `Mono Fallback` в начале
+`assets/style.css`) подогнаны под эти файлы, чтобы подмена шрифта не сдвигала вёрстку.
+После смены шрифта, начертания или размера заголовка их `size-adjust` и `*-override` надо пересчитать.
 
 ## Автоматика
 
