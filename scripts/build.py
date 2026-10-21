@@ -18,7 +18,7 @@ import random
 import re
 import shutil
 import sys
-from datetime import datetime, timedelta, timezone
+from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 
 import ghapi
@@ -27,7 +27,12 @@ import schema
 ROOT = Path(__file__).resolve().parent.parent
 MSK = timezone(timedelta(hours=3))
 NEW_DAYS = 14
+# Initial import: every card that existed before the site went live has this 'added' date.
+LAUNCH = date(2026, 10, 16)
+NEW_PROJECT_DAYS = 30
 LOG_LIMIT = 10
+LOG_PER_PROJECT = 3
+NOTE_MAX = 120
 TICKER_LIMIT = 8
 
 STATUS = {
@@ -35,6 +40,9 @@ STATUS = {
     "dev": "В разработке",
     "research": "Исследование",
 }
+
+# Empty version or last release: a visible dash, a spoken phrase.
+NO_RELEASES = '<span class="muted"><span aria-hidden="true">—</span><span class="sr">релизов нет</span></span>'
 
 
 def esc(value: object) -> str:
@@ -56,6 +64,13 @@ def version_of(tag: str, repo: str = "") -> str:
     if name and tag.lower().startswith(name.lower() + "-") and len(tag) > len(name) + 1:
         tag = tag[len(name) + 1:]
     return tag[1:] if tag[:1] in ("v", "V") and tag[1:2].isdigit() else tag
+
+
+def added_date(p: dict) -> date | None:
+    try:
+        return date.fromisoformat(str(p.get("added") or "")[:10])
+    except ValueError:
+        return None
 
 
 # Own repository in a card's 'source', used for releases when 'releases' is not set.
@@ -97,6 +112,112 @@ def load_projects() -> list[dict]:
     return data["projects"]
 
 
+# ---------- release notes ----------
+
+# Headings that only frame a release body; such a first heading is not the note itself.
+SECTION_HEADS = {
+    "release", "changes", "changelog", "what's changed", "что изменилось", "что изменено",
+    "изменения", "изменено", "добавлено", "исправлено", "удалено", "новое", "added", "changed",
+    "fixed", "removed", "notes", "assets", "checks", "проверка", "checksums", "файлы", "files",
+    "установка", "install", "new contributors",
+}
+# Headings whose first item describes the change.
+CHANGE_HEADS = {
+    "changes", "changelog", "what's changed", "что изменилось", "что изменено", "изменения",
+    "изменено", "добавлено", "исправлено", "новое", "added", "changed", "fixed",
+}
+HEAD = re.compile(r"^#{1,4}\s+(.+?)\s*#*$")
+ITEM = re.compile(r"^\s*([-*+]|\d+[.)])\s")
+SERVICE_LINE = re.compile(r"^(version name|version code|git tag|full changelog)\b", re.IGNORECASE)
+COMMIT_PREFIX = re.compile(r"^(fix|feat|feature|chore|docs|refactor|perf|build|ci)(\([^)]*\))?!?:\s*", re.IGNORECASE)
+CYRILLIC = re.compile(r"[А-Яа-яЁё]")
+
+
+def _head_key(text: str) -> str:
+    return text.lower().rstrip(":").strip()
+
+
+def _body_lines(body: str) -> list[str]:
+    """Body lines with the contents of ``` code blocks blanked out."""
+    lines, fenced = [], False
+    for line in body.splitlines():
+        if line.strip().startswith("```"):
+            fenced = not fenced
+            lines.append(line)
+        else:
+            lines.append("" if fenced else line)
+    return lines
+
+
+def _meaningful(line: str) -> bool:
+    s = line.strip()
+    if not s or s.startswith(("#", "|", ">", "```", "<")):
+        return False
+    s = s.lstrip("-*+ ").replace("**", "")
+    return bool(s) and not SERVICE_LINE.match(s)
+
+
+def _item(lines: list[str], i: int) -> str:
+    """Line i with its wrapped continuation lines."""
+    parts = [lines[i].strip()]
+    for line in lines[i + 1:]:
+        s = line.strip()
+        if not s or HEAD.match(s) or ITEM.match(line) or not _meaningful(line):
+            break
+        parts.append(s)
+    return " ".join(parts)
+
+
+def _note_candidates(name: str, body: str):
+    m = re.match(r"^.*?\d[^:]*:\s+(\S.{2,})$", name.strip())
+    if m:
+        yield m.group(1)
+    lines = _body_lines(body)
+    first = next((line.strip() for line in lines if line.strip()), "")
+    head = HEAD.match(first)
+    if head and _head_key(head.group(1)) not in SECTION_HEADS:
+        yield head.group(1)
+    under = False
+    for i, line in enumerate(lines):
+        head = HEAD.match(line.strip())
+        if head:
+            under = _head_key(head.group(1)) in CHANGE_HEADS
+        elif under and _meaningful(line):
+            yield _item(lines, i)
+            break
+    for i, line in enumerate(lines):
+        if _meaningful(line):
+            yield _item(lines, i)
+            break
+
+
+def _clean_note(s: str) -> str:
+    s = re.sub(r"!?\[([^\]]*)\]\([^)]+\)", r"\1", s)
+    s = s.replace("`", "").replace("**", "")
+    s = re.sub(r"<[^>]*>", "", s)
+    s = re.sub(r"\s+by @\S+ in https?://\S+$", "", s)
+    s = re.sub(r"https?://\S+", "", s)
+    s = s.strip(" -*\t")
+    s = COMMIT_PREFIX.sub("", s)
+    s = re.split(r"(?<=[.!?])\s+(?=[А-ЯЁA-Z«\"])", s, maxsplit=1)[0]
+    s = re.sub(r"\s+", " ", s).rstrip(" :;,—-")
+    if not CYRILLIC.search(s):
+        return ""  # English auto-notes do not belong on the Russian page
+    if len(s) > NOTE_MAX:
+        cut = s[:NOTE_MAX + 1]
+        cut = cut[:cut.rindex(" ")] if " " in cut else s[:NOTE_MAX]
+        s = cut.rstrip(",.;:—- ") + "…"
+    return s
+
+
+def release_note(name: str, body: str) -> str:
+    """One short Russian line about a release, from its name or Markdown body; "" if none fits."""
+    try:
+        return next((note for note in map(_clean_note, _note_candidates(name, body)) if note), "")
+    except Exception:  # noqa: BLE001 - a malformed body must never fail the build
+        return ""
+
+
 # ---------- GitHub releases ----------
 
 def fetch_releases(repo: str, optional: bool = False) -> tuple[list[dict], bool]:
@@ -116,6 +237,7 @@ def fetch_releases(repo: str, optional: bool = False) -> tuple[list[dict], bool]
             "date": datetime.fromisoformat(r["published_at"].replace("Z", "+00:00")),
             "url": r["html_url"],
             "pre": bool(r.get("prerelease")),
+            "note": release_note(r.get("name") or "", r.get("body") or ""),
         })
     out.sort(key=lambda x: x["date"], reverse=True)
     return out, len(raw) == 100
@@ -184,21 +306,28 @@ def plate_svg(seed: str) -> str:
 
 def render_project(num: int, p: dict, rel: list[dict], now: datetime) -> str:
     latest = rel[0] if rel else None
-    is_new = bool(latest and now - latest["date"] <= timedelta(days=NEW_DAYS))
+    today = now.astimezone(MSK).date()
+    a = added_date(p)
+    is_new_project = bool(a and a > LAUNCH and timedelta(0) <= today - a <= timedelta(days=NEW_PROJECT_DAYS))
+    is_fresh = bool(latest and now - latest["date"] <= timedelta(days=NEW_DAYS))
+    title = esc(p["title"])
 
     links = []
     if p.get("link"):
-        links.append(f'<a class="go" href="{esc(p["link"]["url"])}">{esc(p["link"]["label"])} <span aria-hidden="true">→</span></a>')
+        links.append(f'<a class="go" href="{esc(p["link"]["url"])}">{esc(p["link"]["label"])}'
+                     f'<span class="sr"> — {title}</span> <span aria-hidden="true">→</span></a>')
     if p.get("source") and (not p.get("link") or p["source"] != p["link"]["url"]):
-        links.append(f'<a class="src" href="{esc(p["source"])}">Код ↗</a>')
+        links.append(f'<a class="src" href="{esc(p["source"])}">Код<span class="sr"> проекта {title}</span>'
+                     f' <span aria-hidden="true">↗</span></a>')
     if not links:
         links.append('<span class="closed">Код закрыт</span>')
 
     if latest:
-        version = (f'<a href="{esc(latest["url"])}">{esc(latest["version"])}</a>'
-                   f' <span class="muted">· {time_tag(latest["date"])}</span>')
+        date_cls = "fresh" if is_fresh else "muted"
+        version = (f'<a href="{esc(latest["url"])}"><span class="sr">{title}, версия </span>{esc(latest["version"])}</a>'
+                   f' <span class="{date_cls}">· {time_tag(latest["date"])}</span>')
     else:
-        version = '<span class="muted">—</span>'
+        version = NO_RELEASES
 
     spec = [
         f'<div><dt>Статус</dt><dd><span class="dot dot-{p["status"]}" aria-hidden="true"></span>{STATUS[p["status"]]}</dd></div>',
@@ -209,13 +338,15 @@ def render_project(num: int, p: dict, rel: list[dict], now: datetime) -> str:
     if p.get("fork_of"):
         spec.append(f'<div><dt>Основа</dt><dd><a href="https://github.com/{esc(p["fork_of"])}">{esc(p["fork_of"])}</a></dd></div>')
 
-    new_badge = ' <span class="new">NEW</span>' if is_new else ""
+    primary = p["link"]["url"] if p.get("link") else p.get("source")
+    title_html = f'<a class="row-title" href="{esc(primary)}">{title}</a>' if primary else title
+    new_badge = ' <span class="new">Новый</span>' if is_new_project else ""
     return f"""      <li class="row reveal" id="p-{esc(p['id'])}">
-        <div class="row-num">{num:02d}</div>
+        <a class="row-num" href="#p-{esc(p['id'])}" title="Постоянная ссылка на проект" aria-label="{num:02d} — ссылка на проект {title}">{num:02d}</a>
         <div class="plate">{plate_svg(p['id'])}</div>
         <div class="row-main">
           <p class="row-kind">{esc(p['kind'])}</p>
-          <h3>{esc(p['title'])}{new_badge}</h3>
+          <h3>{title_html}{new_badge}</h3>
           <p class="row-sum">{esc(p['summary'])}</p>
           <div class="row-links">{''.join(links)}</div>
         </div>
@@ -235,17 +366,47 @@ def render_ticker(log: list[tuple[dict, dict]]) -> str:
             f'<div class="ticker-group" aria-hidden="true">{items}</div></div></div>')
 
 
+def group_log(log: list[tuple[dict, dict]]) -> list[dict]:
+    """Releases of one project on one Moscow day as one group, newest group first."""
+    groups: dict[tuple[str, date], dict] = {}
+    for p, r in log:
+        key = (p["id"], r["date"].astimezone(MSK).date())
+        group = groups.get(key)
+        if group is None:
+            groups[key] = {"p": p, "newest": r, "oldest": r, "count": 1}
+        else:
+            group["oldest"] = r
+            group["count"] += 1
+    return list(groups.values())
+
+
 def render_log(log: list[tuple[dict, dict]]) -> str:
     if not log:
         return '    <p class="muted">Журнал появится после сборки с доступом к GitHub.</p>'
     rows = []
-    for p, r in log[:LOG_LIMIT]:
-        pre = ' <span class="pre">pre</span>' if r["pre"] else ""
+    per_project: dict[str, int] = {}
+    for g in group_log(log):
+        p, newest, oldest = g["p"], g["newest"], g["oldest"]
+        shown = per_project.get(p["id"], 0)
+        if shown >= LOG_PER_PROJECT:
+            continue
+        per_project[p["id"]] = shown + 1
+        title = esc(p["title"])
+        if g["count"] == 1:
+            ver_text = esc(newest["version"])
+        else:
+            ver_text = f'{esc(oldest["version"])}–{esc(newest["version"])} · {g["count"]}'
+        pre = ' <span class="pre">pre</span>' if newest["pre"] else ""
+        note = newest.get("note") or ""
+        note_html = f'<span class="log-note">{esc(note)}</span>' if note else ""
         rows.append(
-            f'      <li class="log-row reveal">{time_tag(r["date"])}'
-            f'<a class="log-proj" href="#p-{esc(p["id"])}">{esc(p["title"])}</a>'
-            f'<a class="log-ver" href="{esc(r["url"])}">{esc(r["version"])}{pre} <span aria-hidden="true">↗</span></a></li>'
+            f'      <li class="log-row reveal">{time_tag(newest["date"])}'
+            f'<div class="log-what"><a class="log-proj" href="#p-{esc(p["id"])}">{title}</a>{note_html}</div>'
+            f'<a class="log-ver" href="{esc(newest["url"])}"><span class="sr">{title}, версия </span>'
+            f'{ver_text}{pre} <span aria-hidden="true">↗</span></a></li>'
         )
+        if len(rows) == LOG_LIMIT:
+            break
     return '    <ol class="log">\n' + "\n".join(rows) + "\n    </ol>"
 
 
@@ -272,7 +433,7 @@ def build(offline: bool, out: Path) -> None:
         last = (f'<a href="{esc(r["url"])}">{esc(p["title"])} {esc(r["version"])}</a>'
                 f' <span class="muted">· {time_tag(r["date"])}</span>')
     else:
-        last = '<span class="muted">—</span>'
+        last = NO_RELEASES
 
     page = (ROOT / "template.html").read_text(encoding="utf-8")
     values = {

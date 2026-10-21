@@ -31,6 +31,8 @@ python scripts/build.py --offline  # без сети
 python -m http.server 8765 -d _site
 ```
 
+Журнал склеивает релизы одного проекта за день и показывает не больше 3 групп на проект (`LOG_PER_PROJECT` в `build.py`).
+
 ## Автоматика
 
 - **GitHub Actions** (`site.yml`): пересобирает и деплоит сайт на каждый push в `main`
@@ -65,7 +67,7 @@ python -m http.server 8765 -d _site
 - `link` — `{ "url": "https://…", "label": "…" }` или `null`.
 - `source` — http(s)-ссылка на код или `null`.
 - `fork_of` — `"owner/repo"` исходного проекта или `null`.
-- `added` — дата добавления, `YYYY-MM-DD`.
+- `added` — дата добавления, `YYYY-MM-DD`; карточка с `added` позже 2026-10-16 получает бейдж «Новый» на 30 дней.
 
 Схема проверяется в `scripts/schema.py`: `build.py` печатает все ошибки списком и
 завершается с кодом 1. Новое поле сначала добавляется в `ALLOWED` в `scripts/schema.py`.
