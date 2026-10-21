@@ -45,8 +45,39 @@ def fmt_date(dt: datetime) -> str:
     return dt.astimezone(MSK).strftime("%d.%m.%Y")
 
 
-def version_of(tag: str) -> str:
+def time_tag(dt: datetime) -> str:
+    """<time> whose machine date is the same Moscow day as the visible one."""
+    return f'<time datetime="{dt.astimezone(MSK).date().isoformat()}">{fmt_date(dt)}</time>'
+
+
+def version_of(tag: str, repo: str = "") -> str:
+    """Release tag as shown on the site: 'flint2-openwrt-v25.12.5-f0a60eee' -> '25.12.5-f0a60eee'."""
+    name = repo.rsplit("/", 1)[-1]
+    if name and tag.lower().startswith(name.lower() + "-") and len(tag) > len(name) + 1:
+        tag = tag[len(name) + 1:]
     return tag[1:] if tag[:1] in ("v", "V") and tag[1:2].isdigit() else tag
+
+
+# Own repository in a card's 'source', used for releases when 'releases' is not set.
+OWN_REPO = re.compile(r"^https://github\.com/(Asofwar/[A-Za-z0-9._-]+?)(?:\.git)?(?:[/#?]|$)", re.IGNORECASE)
+
+
+def releases_repo(p: dict) -> tuple[str | None, bool]:
+    """Repository to read releases from and whether a 404 there is acceptable.
+
+    'releases' as a string is used as is (404 fails the build); false turns releases off;
+    null or a missing key falls back to the card's own GitHub 'source' (404 tolerated).
+    """
+    value = p.get("releases")
+    if isinstance(value, str) and value:
+        return value, False
+    if value is False:
+        return None, False
+    if value is None:
+        m = OWN_REPO.match(p.get("source") or "")
+        if m:
+            return m.group(1), True
+    return None, False
 
 
 # ---------- data ----------
@@ -77,19 +108,26 @@ def load_projects() -> list[dict]:
 
 # ---------- GitHub releases ----------
 
-def fetch_releases(repo: str) -> list[dict]:
+def fetch_releases(repo: str, optional: bool = False) -> tuple[list[dict], bool]:
+    """Releases of a repo, newest first, and whether the single page may be truncated.
+
+    optional=True turns a 404 into "no releases" instead of a failed build.
+    """
+    raw = ghapi.get(f"/repos/{repo}/releases?per_page=100", allow_404=optional)
+    if raw is None:
+        return [], False
     out = []
-    for r in ghapi.get(f"/repos/{repo}/releases?per_page=10"):
+    for r in raw:
         if r.get("draft") or not r.get("published_at"):
             continue
         out.append({
-            "version": version_of(r["tag_name"]),
+            "version": version_of(r["tag_name"], repo),
             "date": datetime.fromisoformat(r["published_at"].replace("Z", "+00:00")),
             "url": r["html_url"],
             "pre": bool(r.get("prerelease")),
         })
     out.sort(key=lambda x: x["date"], reverse=True)
-    return out
+    return out, len(raw) == 100
 
 
 # ---------- generative plate ----------
@@ -132,7 +170,7 @@ def plate_svg(seed: str) -> str:
             traces.append(pts)
 
     sig = rng.randrange(len(traces)) if traces else -1
-    parts = [f'<svg class="plate-svg" viewBox="0 0 120 120" role="img" aria-label="Схема проекта {esc(seed)}">']
+    parts = ['<svg class="plate-svg" viewBox="0 0 120 120" aria-hidden="true" focusable="false">']
     for gx in range(n):
         for gy in range(n):
             if (gx, gy) not in used:
@@ -167,7 +205,7 @@ def render_project(num: int, p: dict, rel: list[dict], now: datetime) -> str:
 
     if latest:
         version = (f'<a href="{esc(latest["url"])}">{esc(latest["version"])}</a>'
-                   f' <span class="muted">· {fmt_date(latest["date"])}</span>')
+                   f' <span class="muted">· {time_tag(latest["date"])}</span>')
     else:
         version = '<span class="muted">—</span>'
 
@@ -213,7 +251,7 @@ def render_log(log: list[tuple[dict, dict]]) -> str:
     for p, r in log[:LOG_LIMIT]:
         pre = ' <span class="pre">pre</span>' if r["pre"] else ""
         rows.append(
-            f'      <li class="log-row reveal"><time datetime="{r["date"].date().isoformat()}">{fmt_date(r["date"])}</time>'
+            f'      <li class="log-row reveal">{time_tag(r["date"])}'
             f'<a class="log-proj" href="#p-{esc(p["id"])}">{esc(p["title"])}</a>'
             f'<a class="log-ver" href="{esc(r["url"])}">{esc(r["version"])}{pre} <span aria-hidden="true">↗</span></a></li>'
         )
@@ -225,17 +263,23 @@ def build(offline: bool, out: Path) -> None:
     projects = load_projects()
 
     releases: dict[str, list[dict]] = {}
+    truncated = False
     for p in projects:
-        repo = p.get("releases")
-        releases[p["id"]] = fetch_releases(repo) if repo and not offline else []
+        repo, optional = releases_repo(p)
+        rel, capped = fetch_releases(repo, optional) if repo and not offline else ([], False)
+        releases[p["id"]] = rel
+        # A full page whose oldest release is still within 30 days: the count is a lower bound.
+        if capped and rel and now - rel[-1]["date"] <= timedelta(days=30):
+            truncated = True
 
     log = sorted(((p, r) for p in projects for r in releases[p["id"]]),
                  key=lambda pr: pr[1]["date"], reverse=True)
     recent = sum(1 for _, r in log if now - r["date"] <= timedelta(days=30))
+    suffix = "+" if truncated else ""
     if log:
         p, r = log[0]
         last = (f'<a href="{esc(r["url"])}">{esc(p["title"])} {esc(r["version"])}</a>'
-                f' <span class="muted">· {fmt_date(r["date"])}</span>')
+                f' <span class="muted">· {time_tag(r["date"])}</span>')
     else:
         last = '<span class="muted">—</span>'
 
@@ -243,7 +287,7 @@ def build(offline: bool, out: Path) -> None:
     values = {
         "year": str(now.astimezone(MSK).year),
         "project_count": str(len(projects)),
-        "releases_30d": str(recent),
+        "releases_30d": f"{recent}{suffix}",
         "last_release": last,
         "ticker": render_ticker(log),
         "projects": "\n".join(render_project(i + 1, p, releases[p["id"]], now) for i, p in enumerate(projects)),
