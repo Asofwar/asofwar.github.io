@@ -39,10 +39,12 @@ def _transient(e: urllib.error.HTTPError) -> bool:
     return e.code == 403 and remaining == "0"
 
 
-def get(path: str, raw: bool = False, allow_404: bool = False):
+def get(path: str, raw: bool = False, allow_404: bool = False, soft: bool = False):
     """GET an API path. Exits on errors so a broken run never publishes partial data.
 
     raw=True returns the body as text (used for README). allow_404=True returns None on 404.
+    soft=True returns None (with a warning) instead of exiting on an HTTP error, for lookups
+    whose failure must not stop the run, e.g. a known repository blocked with 403 or 451.
     Server errors, rate limits and network failures are retried up to ATTEMPTS times in total.
     """
     req = urllib.request.Request(API + path, headers={
@@ -62,6 +64,9 @@ def get(path: str, raw: bool = False, allow_404: bool = False):
             if allow_404 and e.code == 404:
                 return None
             if last or not _transient(e):
+                if soft:
+                    print(f"warning: GitHub API {path}: HTTP {e.code} {e.reason}, skipped", file=sys.stderr)
+                    return None
                 sys.exit(f"GitHub API {path}: HTTP {e.code} {e.reason}")
             delay = _retry_delay(e, attempt)
             reason = f"HTTP {e.code} {e.reason}"

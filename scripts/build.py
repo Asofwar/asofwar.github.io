@@ -23,6 +23,7 @@ from pathlib import Path
 
 import ghapi
 import schema
+from repos import releases_repo
 
 ROOT = Path(__file__).resolve().parent.parent
 MSK = timezone(timedelta(hours=3))
@@ -71,28 +72,6 @@ def added_date(p: dict) -> date | None:
         return date.fromisoformat(str(p.get("added") or "")[:10])
     except ValueError:
         return None
-
-
-# Own repository in a card's 'source', used for releases when 'releases' is not set.
-OWN_REPO = re.compile(r"^https://github\.com/(Asofwar/[A-Za-z0-9._-]+?)(?:\.git)?(?:[/#?]|$)", re.IGNORECASE)
-
-
-def releases_repo(p: dict) -> tuple[str | None, bool]:
-    """Repository to read releases from and whether a 404 there is acceptable.
-
-    'releases' as a string is used as is (404 fails the build); false turns releases off;
-    null or a missing key falls back to the card's own GitHub 'source' (404 tolerated).
-    """
-    value = p.get("releases")
-    if isinstance(value, str) and value:
-        return value, False
-    if value is False:
-        return None, False
-    if value is None:
-        m = OWN_REPO.match(p.get("source") or "")
-        if m:
-            return m.group(1), True
-    return None, False
 
 
 # ---------- data ----------
@@ -465,7 +444,8 @@ def build(offline: bool, out: Path) -> None:
         shutil.rmtree(out)
     out.mkdir(parents=True)
     (out / "index.html").write_text(page, encoding="utf-8")
-    shutil.copytree(ROOT / "assets", out / "assets")  # assets/fonts are still served as files
+    # CSS and JS are inlined into the page; only the fonts are served as files.
+    shutil.copytree(ROOT / "assets" / "fonts", out / "assets" / "fonts")
     shutil.copytree(ROOT / "img", out / "img")
     print(f"built {out / 'index.html'}: {len(projects)} projects, {len(log)} releases")
 

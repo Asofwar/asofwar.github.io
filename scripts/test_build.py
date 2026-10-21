@@ -23,6 +23,7 @@ from unittest import mock
 import build
 import discover
 import ghapi
+import repos
 import schema
 
 DATA = json.loads((Path(__file__).resolve().parent.parent / "data" / "projects.json").read_text(encoding="utf-8"))
@@ -224,6 +225,10 @@ class OfflineBuildTest(unittest.TestCase):
             with contextlib.redirect_stdout(io.StringIO()):
                 build.build(offline=True, out=out)
             page = (out / "index.html").read_text(encoding="utf-8")
+            fonts = sorted(p.name for p in (out / "assets" / "fonts").glob("*.woff2"))
+            unused = [(out / "assets" / name).exists() for name in ("style.css", "main.js")]
+        self.assertEqual(fonts, ["golos.woff2", "jbmono.woff2", "unbounded.woff2"])
+        self.assertEqual(unused, [False, False])  # inlined into the page, not published as files
         self.assertNotIn("{{", page)
         self.assertEqual(page.count('<li class="row reveal"'), len(DATA["projects"]))
         self.assertIn("Журнал появится", page)
@@ -303,6 +308,86 @@ class GhapiRetryTest(unittest.TestCase):
     def test_404_not_allowed_exits_without_retry(self):
         with self.assertRaises(SystemExit):
             self.call([http_error(404)])
+
+    def test_soft_returns_none_on_blocked_repo(self):
+        result, calls, sleeps = self.call([http_error(451)], allow_404=True, soft=True)
+        self.assertIsNone(result)
+        self.assertEqual(calls, 1)
+        self.assertEqual(sleeps, [])
+
+
+class RepoOfTest(unittest.TestCase):
+    def test_names(self):
+        self.assertEqual(repos.repo_of("https://github.com/Asofwar/Foo.git"), "asofwar/foo")
+        self.assertEqual(repos.repo_of("https://github.com/Asofwar/foo/releases/latest"), "asofwar/foo")
+        self.assertEqual(repos.repo_of("https://github.com/Asofwar/foo"), "asofwar/foo")
+        self.assertEqual(repos.repo_of("https://github.com/Asofwar/foo.github.io"), "asofwar/foo.github.io")
+        self.assertIsNone(repos.repo_of("https://asofwar.github.io/prokop/"))
+        self.assertIsNone(repos.repo_of(None))
+
+    def test_known_repos_strip_git_suffix(self):
+        data = {"projects": [{"id": "a", "source": "https://github.com/Asofwar/Foo.git"}]}
+        self.assertIn("asofwar/foo", discover.known_repos(data))
+
+
+def fake_api(routes: dict):
+    """ghapi.get replacement answering by path prefix; records the paths it was asked for."""
+    asked: list[str] = []
+
+    def get(path, raw=False, allow_404=False, soft=False):
+        asked.append(path)
+        for prefix, answer in routes.items():
+            if path.startswith(prefix):
+                return answer
+        raise AssertionError(f"unexpected request {path}")
+
+    return get, asked
+
+
+class DiscoverTest(unittest.TestCase):
+    RECENT = "2026-10-20T10:00:00Z"
+    CUTOFF = utc("2026-06-01")
+
+    def test_status_hint_uses_source_fallback(self):
+        get, asked = fake_api({"/repos/Asofwar/Tool/releases": [
+            {"tag_name": "v1.0.0", "published_at": self.RECENT, "prerelease": False}]})
+        projects = [{"id": "tool", "status": "dev", "releases": None,
+                     "source": "https://github.com/Asofwar/Tool"}]
+        with mock.patch.object(discover.ghapi, "get", get):
+            hints = discover.status_hints(projects)
+        self.assertEqual(hints, [{"id": "tool", "suggest_status": "live", "version": "v1.0.0"}])
+        self.assertEqual(asked, ["/repos/Asofwar/Tool/releases?per_page=10"])
+
+    def test_fork_drops_inherited_text_and_readme(self):
+        get, asked = fake_api({
+            "/repos/Asofwar/fork/releases": [{"tag_name": "v2", "published_at": self.RECENT}],
+            "/repos/Asofwar/fork": {"parent": {"full_name": "Up/proj", "description": "Upstream text",
+                                               "homepage": "https://up.example"}},
+        })
+        repo = {"full_name": "Asofwar/fork", "html_url": "https://github.com/Asofwar/fork", "fork": True,
+                "description": "Upstream text", "homepage": "https://up.example", "pushed_at": self.RECENT}
+        with mock.patch.object(discover.ghapi, "get", get):
+            entry = discover.candidate(repo, self.CUTOFF)
+        self.assertEqual(entry["fork_of"], "Up/proj")
+        self.assertEqual((entry["description"], entry["homepage"], entry["readme_excerpt"]), ("", "", ""))
+        self.assertFalse(any(p.endswith("/readme") for p in asked))
+
+    def test_fork_keeps_own_description(self):
+        get, _ = fake_api({
+            "/repos/Asofwar/fork/releases": [{"tag_name": "v2", "published_at": self.RECENT}],
+            "/repos/Asofwar/fork": {"parent": {"full_name": "Up/proj", "description": "Upstream text"}},
+        })
+        repo = {"full_name": "Asofwar/fork", "html_url": "u", "fork": True,
+                "description": "Порт на Steam Deck", "pushed_at": self.RECENT}
+        with mock.patch.object(discover.ghapi, "get", get):
+            entry = discover.candidate(repo, self.CUTOFF)
+        self.assertEqual(entry["description"], "Порт на Steam Deck")
+
+    def test_fork_without_fresh_release_skipped(self):
+        get, _ = fake_api({"/repos/Asofwar/fork/releases": []})
+        repo = {"full_name": "Asofwar/fork", "html_url": "u", "fork": True, "pushed_at": self.RECENT}
+        with mock.patch.object(discover.ghapi, "get", get):
+            self.assertIsNone(discover.candidate(repo, self.CUTOFF))
 
 
 if __name__ == "__main__":

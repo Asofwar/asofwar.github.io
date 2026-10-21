@@ -19,6 +19,7 @@
 | `scripts/schema.py` | Строгая проверка `data/projects.json`, её вызывает `build.py` |
 | `scripts/discover.py` | Поиск новых репозиториев → `data/candidates.json` |
 | `scripts/ghapi.py` | Мини-клиент GitHub REST API |
+| `scripts/repos.py` | Ссылки на репозитории в карточках: откуда брать релизы, имя репо из URL |
 | `scripts/test_build.py` | Юнит-тесты скриптов |
 | `.github/workflows/site.yml` | Сборка и деплой в GitHub Pages |
 | `.github/workflows/discover.yml` | Еженедельный снимок кандидатов |
@@ -127,10 +128,13 @@ uvx --from "fonttools[woff]" fonttools varLib.instancer <name>.sub.woff2 wght=<l
   `projects` и `ignore`: `{ repo, url, description, homepage, language, topics, pushed_at,
   releases, readme_excerpt, fork_of }`. `releases` — до 3 последних релизов
   `{ version, date, pre }`, `fork_of` — `"owner/repo"` upstream для форка, иначе `null`.
-  `readme_excerpt` — начало README, до 4000 символов; у форка до 1000, потому что
-  это обычно текст upstream.
+  `readme_excerpt` — начало README, до 4000 символов. У форка README не загружается, а
+  `description` и `homepage` пусты, если совпадают с upstream: это текст чужого проекта.
 - Форки попадают в кандидаты, только если у них есть свой релиз за 120 дней.
+- Кандидат, который дублирует существующую карточку, агент отправляет в `ignore` с причиной
+  «Уже на сайте как <id>», иначе он возвращался бы каждую неделю.
 - Репозитории из `projects` и `ignore` сверяются и по текущему имени, поэтому
   переименованный репозиторий не возвращается кандидатом.
 - `status_hints[]` — `{ id, suggest_status, version }`: проект в статусе `dev`, у которого
-  вышел стабильный релиз 1.0 или новее.
+  вышел стабильный релиз 1.0 или новее. Релизы берутся там же, где их берёт сборка:
+  из `releases` или, при `releases: null`, из собственного `source` (`scripts/repos.py`).

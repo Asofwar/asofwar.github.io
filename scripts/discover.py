@@ -3,8 +3,9 @@
 Runs in GitHub Actions (the cloud agent cannot list the owner's repositories itself).
 The agent then reads the snapshot and decides which candidates become project cards.
 Forks are taken only if they have an own release within ACTIVE_DAYS; their fork_of names
-the upstream. Repositories already on the site are also matched by their current name,
-so a renamed repository does not come back as a new candidate.
+the upstream. A fork's README and an inherited description or homepage are upstream text,
+so they are left out. Repositories already on the site are also matched by their current
+name, so a renamed repository does not come back as a new candidate.
 
 Usage:
     python scripts/discover.py
@@ -26,19 +27,14 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 import ghapi
+from repos import releases_repo, repo_of
 
 ROOT = Path(__file__).resolve().parent.parent
 OWNER = "Asofwar"
 ACTIVE_DAYS = 120
 README_LIMIT = 4000
-FORK_README_LIMIT = 1000  # a fork's README is mostly upstream text: less foreign text for the agent
 KEEPALIVE_DAYS = 28
 OUT = ROOT / "data" / "candidates.json"
-
-
-def repo_of(url: object) -> str | None:
-    m = re.match(r"https://github\.com/([^/]+/[^/#?]+)", url if isinstance(url, str) else "")
-    return m.group(1).lower() if m else None
 
 
 def known_repos(data: dict) -> set[str]:
@@ -74,11 +70,63 @@ def list_repos() -> list[dict]:
         page += 1
 
 
-def releases_of(full_name: str, limit: int = 3) -> list[dict]:
-    items = ghapi.get(f"/repos/{full_name}/releases?per_page=10")
+def releases_of(full_name: str, limit: int = 3, optional: bool = False) -> list[dict]:
+    """Latest releases; optional=True treats a missing repository (404) as no releases."""
+    items = ghapi.get(f"/repos/{full_name}/releases?per_page=10", allow_404=optional) or []
     out = [{"version": r["tag_name"], "date": r["published_at"][:10], "pre": bool(r.get("prerelease"))}
            for r in items if not r.get("draft") and r.get("published_at")]
     return out[:limit]
+
+
+def candidate(r: dict, cutoff: datetime) -> dict | None:
+    """Snapshot entry for a listed repository, or None when it is not a candidate."""
+    rels = releases_of(r["full_name"])
+    fork_of = None
+    description = r.get("description") or ""
+    homepage = r.get("homepage") or ""
+    readme = ""
+    if r["fork"]:
+        # Forks only with an own release within ACTIVE_DAYS (mirrors of upstream have none).
+        if not rels or datetime.fromisoformat(rels[0]["date"]).replace(tzinfo=timezone.utc) < cutoff:
+            return None
+        parent = ghapi.get(f"/repos/{r['full_name']}")["parent"]
+        fork_of = parent["full_name"]
+        # GitHub copies the upstream description and homepage into a new fork: they describe
+        # upstream's work, not the fork's. The README is upstream text too, so it is not fetched.
+        if description == (parent.get("description") or ""):
+            description = ""
+        if homepage == (parent.get("homepage") or ""):
+            homepage = ""
+    else:
+        readme = ghapi.get(f"/repos/{r['full_name']}/readme", raw=True, allow_404=True) or ""
+    return {
+        "repo": r["full_name"],
+        "url": r["html_url"],
+        "description": description,
+        "homepage": homepage,
+        "language": r.get("language") or "",
+        "topics": r.get("topics") or [],
+        "pushed_at": r["pushed_at"][:10],
+        "releases": rels,
+        "readme_excerpt": readme[:README_LIMIT],
+        "fork_of": fork_of,
+    }
+
+
+def status_hints(projects: list) -> list[dict]:
+    """A project in development whose latest stable release reached 1.0 (same releases
+    source as build.py: 'releases', or the card's own 'source' when 'releases' is null)."""
+    hints = []
+    for p in projects:
+        if not isinstance(p, dict) or p.get("status") != "dev":
+            continue
+        repo, optional = releases_repo(p)
+        if not repo:
+            continue
+        stable = [x for x in releases_of(repo, limit=10, optional=optional) if not x["pre"]]
+        if stable and is_stable_1x(stable[0]["version"]):
+            hints.append({"id": p.get("id"), "suggest_status": "live", "version": stable[0]["version"]})
+    return hints
 
 
 def is_stable_1x(version: str) -> bool:
@@ -92,9 +140,10 @@ def main() -> None:
     site = f"{OWNER}/{OWNER}.github.io".lower()
     # Canonical names: a renamed repository is listed under its new name, while the data may
     # still hold the old one (GitHub keeps a 301 redirect, urllib follows it). The old name
-    # stays in known too. A deleted or private repository answers 404 and is skipped.
+    # stays in known too. A deleted or private repository answers 404 and is skipped, and so is
+    # any other lookup error (e.g. 403/451 for a blocked repository): the old name still counts.
     for name in sorted(known - {site}):
-        meta = ghapi.get(f"/repos/{name}", allow_404=True)
+        meta = ghapi.get(f"/repos/{name}", allow_404=True, soft=True)
         if meta is not None:
             known.add(meta["full_name"].lower())
     cutoff = datetime.now(timezone.utc) - timedelta(days=ACTIVE_DAYS)
@@ -106,39 +155,11 @@ def main() -> None:
             continue
         if r["full_name"].lower() in known:
             continue
-        rels = releases_of(r["full_name"])
-        fork_of = None
-        homepage = r.get("homepage") or ""
-        if r["fork"]:
-            # Forks only with an own release within ACTIVE_DAYS (mirrors of upstream have none).
-            if not rels or datetime.fromisoformat(rels[0]["date"]).replace(tzinfo=timezone.utc) < cutoff:
-                continue
-            parent = ghapi.get(f"/repos/{r['full_name']}")["parent"]
-            fork_of = parent["full_name"]
-            if homepage == (parent.get("homepage") or ""):
-                homepage = ""  # inherited upstream site, not the fork's own
-        readme = ghapi.get(f"/repos/{r['full_name']}/readme", raw=True, allow_404=True) or ""
-        candidates.append({
-            "repo": r["full_name"],
-            "url": r["html_url"],
-            "description": r.get("description") or "",
-            "homepage": homepage,
-            "language": r.get("language") or "",
-            "topics": r.get("topics") or [],
-            "pushed_at": r["pushed_at"][:10],
-            "releases": rels,
-            "readme_excerpt": readme[:FORK_README_LIMIT if fork_of else README_LIMIT],
-            "fork_of": fork_of,
-        })
+        entry = candidate(r, cutoff)
+        if entry is not None:
+            candidates.append(entry)
 
-    # Status hints: a project in development whose latest stable release reached 1.0.
-    hints = []
-    for p in data.get("projects") or []:
-        if not isinstance(p, dict) or p.get("status") != "dev" or not isinstance(p.get("releases"), str):
-            continue
-        stable = [x for x in releases_of(p["releases"], limit=10) if not x["pre"]]
-        if stable and is_stable_1x(stable[0]["version"]):
-            hints.append({"id": p["id"], "suggest_status": "live", "version": stable[0]["version"]})
+    hints = status_hints(data.get("projects") or [])
 
     payload = {"candidates": candidates, "status_hints": hints}
     if OUT.exists():
