@@ -1,5 +1,69 @@
 {
-  "generated_at": "2026-10-19T11:30:41Z",
-  "candidates": [],
+  "generated_at": "2026-10-21T18:01:48Z",
+  "candidates": [
+    {
+      "repo": "Asofwar/freebrush",
+      "url": "https://github.com/Asofwar/freebrush",
+      "description": "Offline open-source Android app for Oclean smart toothbrushes: no account, no cloud, no internet permission",
+      "homepage": "",
+      "language": "Kotlin",
+      "topics": [
+        "android",
+        "bluetooth-low-energy",
+        "jetpack-compose",
+        "oclean",
+        "privacy",
+        "toothbrush"
+      ],
+      "pushed_at": "2026-10-21",
+      "releases": [
+        {
+          "version": "v0.2.1",
+          "date": "2026-10-21",
+          "pre": false
+        },
+        {
+          "version": "v0.2.0",
+          "date": "2026-10-21",
+          "pre": false
+        },
+        {
+          "version": "v0.1.0",
+          "date": "2026-10-21",
+          "pre": false
+        }
+      ],
+      "readme_excerpt": "<img src=\"docs/icon.png\" width=\"96\" alt=\"FreeBrush icon\" align=\"right\">\n\n# FreeBrush\n\nAn open-source Android app for Oclean smart toothbrushes that works offline.\nIt talks to the brush directly over Bluetooth Low Energy. You need no account and no cloud, and your\nbrushing data never leaves the phone. The only time the app goes online is a daily check for its own\nupdates on GitHub, which you can turn off.\n\n> **Status: early alpha.** Syncing works on a real **Oclean X Pro Digital** (`OCLEANY3PB`,\n> firmware 1.0.2.5). Other models that share the same Bluetooth protocol may work, but nobody has\n> tested them yet. See [Supported brushes](#supported-brushes).\n\n[По-русски](#по-русски)\n\n## Why\n\nThe official app makes you create an account before it does anything. It shows a server-driven\nsplash banner and sends your brushing data and usage statistics to the vendor's servers. All the\nuseful data (score, duration, per-zone time, pressure) is measured by the brush itself, so none of\nthat is needed. FreeBrush reads the data straight from the brush and keeps it on your phone.\n\n## Features\n\n| | FreeBrush | Official app |\n|---|---|---|\n| Brushing history: score, duration, zones, pressure¹ | ✅ on the phone | ✅ in the cloud |\n| Brush-head counters (days, sessions, wear) | ✅ | ✅ |\n| Works without an account | ✅ | ❌ |\n| Internet access | only the update check, can be turned off | required |\n| Ads / splash banners | none | server-driven banner |\n| Streaks, two-week chart, daily goal | ✅ | partly |\n| 3D jaw model you can rotate and tap for per-zone stats | ✅ | flat diagram |\n| Several people's brushes on one phone, each with its own name, history and level | ✅ | family accounts in the cloud |\n| Guided brushing: zone by zone on the 3D jaw, extra time for zones you skip, plan vs the brush's record | ✅ | — |\n| Export to CSV | ✅ | ❌ |\n| Brush settings: zone reminder, raise-to-wake, day/evening mode, side-motion warning, display language, brush-head reset and limit | ✅ | ✅ |\n| Settings the official app hides on this brush: pressure alert, brush pause, wake-up mode | ✅ | ❌ |\n| Growth level on the brush screen actually grows with brushing | ✅ | ❌ stays at level 1 |\n| Brushing programmes: the brush's built-in modes (incl. the hidden day/evening ones), Oclean's catalogue | ✅ | ✅ |\n| Custom programmes | ✅ up to 25, up to 9 steps, 32 cleaning levels + whitening, massage, sensitive, 5–255 s steps | 3 programmes, 6 steps, 4 levels per mode |\n| Firmware updates | ❌ never: firmware comes from the vendor's servers | ✅ |\n| Family accounts, \"expert\" reports, AI chat | ❌ | ✅ |\n\n¹ Only on brushes that log pressure. The X Pro Digital sends a fixed placeholder instead, so FreeBrush hides it.\n\nThe brush keeps its last 32 sessions and overwrites the oldest ones. FreeBrush does not delete sessions from the\nbrush, so sync at least every couple of weeks to keep the full history.\n\n## Supported brushes\n\n| Model | Model ID | Status |\n|---|---|---|\n| Oclean X Pro Digital | `OCLEANY3PB` | ✅ sync confirmed (firmware 1.0.2.5): score, duration, zones, battery, brush-head counters |\n| Oclean X Pro Elite | `OCLEANY3P`, `OCLEANY3X` | same protocol, untested |\n| Oclean X / X Pro / X Pro 20 / X Ultra | `OCLEANY3M`, `OCLEANY3`, `OCLEANX20`, `OCLEANV1a` | same protocol family, untested |\n\nIf you own another Oclean model, open a [device report](../../issues/new?template=device-report.yml)\nwith the sync log from the **Brush** tab.\n\n## Install\n\nDownload `FreeBrush-<version>.apk` from [Releases](../../releases/latest) and open it on the phone,\nor build it yourself. Requires Android 12 or newer and Bluetooth LE.\n\nFreeBrush updates itself: once a day it asks GitHub for the latest release and offers it in a dialog.\nThe first update asks you to allow installs from FreeBrush; after that Android installs updates without\nanother prompt. Turn the check off under **Brush → Updates**, or check by hand there.\n\n**Close the official Oclean app before syncing.** The brush accepts only one connection at a t",
+      "fork_of": null
+    },
+    {
+      "repo": "Asofwar/speedbreaker-hle",
+      "url": "https://github.com/Asofwar/speedbreaker-hle",
+      "description": "SpeedBreaker fork with renderer optimizations for the Steam Deck at 5 W. Форк SpeedBreaker с оптимизацией рендера под Steam Deck на 5 Вт.",
+      "homepage": "",
+      "language": "C++",
+      "topics": [],
+      "pushed_at": "2026-10-21",
+      "releases": [
+        {
+          "version": "v0.1.7-hle.3",
+          "date": "2026-10-21",
+          "pre": false
+        },
+        {
+          "version": "v0.1.7-hle.2",
+          "date": "2026-10-21",
+          "pre": false
+        },
+        {
+          "version": "v0.1.7-hle.1",
+          "date": "2026-10-20",
+          "pre": false
+        }
+      ],
+      "readme_excerpt": "",
+      "fork_of": "SpeedBreakerProject/speedbreaker"
+    }
+  ],
   "status_hints": []
 }
