@@ -9,10 +9,12 @@ so a renamed repository does not come back as a new candidate.
 Usage:
     python scripts/discover.py
 
-The file is rewritten when candidates or status hints change, so a quiet week
-produces no commit. Even without changes the snapshot is rewritten (new generated_at)
+An empty snapshot (no candidates, no status hints) is rewritten only when it changes,
+so a quiet week produces no commit. Even without changes it is rewritten (new generated_at)
 at least every KEEPALIVE_DAYS, so GitHub does not disable the scheduled workflows
-after 60 days without repository activity.
+after 60 days without repository activity. A snapshot with candidates or status hints is
+rewritten on every run: its generated_at then tells the agent whether the latest weekly
+run wrote it or a missed run left an old one behind.
 """
 
 from __future__ import annotations
@@ -29,6 +31,7 @@ ROOT = Path(__file__).resolve().parent.parent
 OWNER = "Asofwar"
 ACTIVE_DAYS = 120
 README_LIMIT = 4000
+FORK_README_LIMIT = 1000  # a fork's README is mostly upstream text: less foreign text for the agent
 KEEPALIVE_DAYS = 28
 OUT = ROOT / "data" / "candidates.json"
 
@@ -124,7 +127,7 @@ def main() -> None:
             "topics": r.get("topics") or [],
             "pushed_at": r["pushed_at"][:10],
             "releases": rels,
-            "readme_excerpt": readme[:README_LIMIT],
+            "readme_excerpt": readme[:FORK_README_LIMIT if fork_of else README_LIMIT],
             "fork_of": fork_of,
         })
 
@@ -147,7 +150,10 @@ def main() -> None:
             age_days = (datetime.now(timezone.utc).date() - generated.astimezone(timezone.utc).date()).days
         except (ValueError, OverflowError):
             age_days = KEEPALIVE_DAYS
-        if {k: previous.get(k) for k in payload} == payload and age_days < KEEPALIVE_DAYS:
+        # Candidates or hints wait for the agent: rewrite them every run, so a fresh
+        # generated_at shows the agent that this week's run produced them.
+        pending = bool(candidates or hints)
+        if not pending and {k: previous.get(k) for k in payload} == payload and age_days < KEEPALIVE_DAYS:
             print(f"no changes: {len(candidates)} candidates, {len(hints)} status hints")
             return
     document = {"generated_at": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"), **payload}

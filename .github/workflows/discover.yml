@@ -1,12 +1,17 @@
 name: Discover new projects
 
-# Runs one hour before the weekly cloud agent (Monday 07:00 UTC),
-# which reads data/candidates.json written here. discover.py also rewrites
-# the snapshot at least every 28 days, so GitHub does not disable the schedules
-# of this repository after 60 days without activity.
+# Runs on Sunday 18:00 UTC, 13 hours before the weekly cloud agent
+# (Monday 07:00 UTC), which reads data/candidates.json written here.
+# GitHub may start scheduled runs hours late (the Monday 06:00 run on
+# 2026-10-19 started 5.5 hours late, after the agent had already read
+# an old snapshot), so the run needs a margin of more than 12 hours.
+# discover.py rewrites a snapshot with candidates or status hints on every run,
+# so a fresh generated_at tells the agent the snapshot is from this week.
+# An empty snapshot is rewritten at least every 28 days, so GitHub does not
+# disable the schedules of this repository after 60 days without activity.
 on:
   schedule:
-    - cron: "0 6 * * 1"
+    - cron: "0 18 * * 0"
   workflow_dispatch:
 
 permissions:
