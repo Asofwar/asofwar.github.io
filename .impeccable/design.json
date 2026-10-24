@@ -1,0 +1,132 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-10-24T12:00:00Z",
+  "title": "Design System: Asofwar — индекс проектов",
+  "extensions": {
+    "colorMeta": {
+      "signal-orange": { "role": "primary", "displayName": "Signal Orange", "canonical": "#ff4f1f", "tonalRamp": ["#3d1206", "#6b1f0b", "#9a2c10", "#c4380f", "#ff4f1f", "#ff7a52", "#ffa88c", "#ffd8cb"] },
+      "signal-ink": { "role": "primary", "displayName": "Signal Ink", "canonical": "#c4380f", "tonalRamp": ["#2e0d03", "#561806", "#7e2309", "#a62e0c", "#c4380f", "#df5a31", "#ec8d6d", "#f7c6b5"] },
+      "paper": { "role": "neutral", "displayName": "Paper", "canonical": "#f3f1ec", "tonalRamp": ["#22211e", "#3d3b36", "#5a5850", "#7c796f", "#a29e93", "#c7c3b8", "#e3e0d8", "#f3f1ec"] },
+      "paper-shade": { "role": "neutral", "displayName": "Paper Shade", "canonical": "#ebe8e0" },
+      "ink": { "role": "neutral", "displayName": "Ink", "canonical": "#16161a", "tonalRamp": ["#16161a", "#2b2b30", "#424248", "#5b5b62", "#76767d", "#94949a", "#b8b8bd", "#e0e0e3"] },
+      "ink-soft": { "role": "neutral", "displayName": "Ink Soft", "canonical": "#4a4944" },
+      "muted": { "role": "neutral", "displayName": "Muted", "canonical": "#6b685f" },
+      "rule": { "role": "neutral", "displayName": "Rule", "canonical": "#d6d2c8" },
+      "rule-strong": { "role": "neutral", "displayName": "Rule Strong", "canonical": "#b3ae9f" },
+      "status-live": { "role": "tertiary", "displayName": "Live Green", "canonical": "#2f9e5b" },
+      "status-dev": { "role": "tertiary", "displayName": "Dev Amber", "canonical": "#d49a00" },
+      "status-research": { "role": "tertiary", "displayName": "Research Violet", "canonical": "#6a6ad8" },
+      "night-paper": { "role": "neutral", "displayName": "Night Paper", "canonical": "#111110" },
+      "night-ink": { "role": "neutral", "displayName": "Night Ink", "canonical": "#ecebe6" },
+      "night-signal": { "role": "primary", "displayName": "Night Signal", "canonical": "#ff6a3d" },
+      "night-signal-ink": { "role": "primary", "displayName": "Night Signal Ink", "canonical": "#ff8a63" }
+    },
+    "typographyMeta": {
+      "display": { "displayName": "Display", "purpose": "The ASOF/WAR wordmark only, filling the content width." },
+      "headline": { "displayName": "Headline", "purpose": "Section titles and the contact address." },
+      "title": { "displayName": "Title", "purpose": "Project names in the index and board figures." },
+      "body": { "displayName": "Body", "purpose": "Summaries and spec values." },
+      "lead": { "displayName": "Lead", "purpose": "The single introductory paragraph." },
+      "label": { "displayName": "Label", "purpose": "Uppercase mono captions: section labels, kinds, spec keys." },
+      "mono": { "displayName": "Mono", "purpose": "Numbers, dates, versions, links, ticker, nav." }
+    },
+    "shadows": [
+      { "name": "target-stripe", "value": "inset 0 3px 0 #ff4f1f", "purpose": "Marks the project row opened by permalink; a marker, not elevation." }
+    ],
+    "motion": [
+      { "name": "reveal", "value": "opacity .5s ease, transform .5s ease (translateY 14px)", "purpose": "Rows and log entries appear on scroll; off under reduced motion and without JS." },
+      { "name": "trace-flow", "value": "stroke-dasharray 5 5, dashoffset -10, .7s linear infinite", "purpose": "The orange plate trace flows on row hover or focus." },
+      { "name": "title-underline", "value": "background-size .25s ease", "purpose": "2px orange underline grows under a project title on hover/focus." },
+      { "name": "ticker", "value": "translateX(-50%), 48s linear infinite", "purpose": "Release ticker; pauses on hover, static under reduced motion." }
+    ],
+    "breakpoints": [
+      { "name": "tight", "value": "380px" },
+      { "name": "phone", "value": "600px" },
+      { "name": "tablet", "value": "960px" },
+      { "name": "container", "value": "1200px" }
+    ]
+  },
+  "components": [
+    {
+      "name": "Index Row",
+      "kind": "card",
+      "refersTo": "plate",
+      "description": "A project as a datasheet position: number, plate, text, spec table.",
+      "html": "<div class=\"ds-row\"><a class=\"ds-num\" href=\"#\">01</a><div class=\"ds-plate\"></div><div><p class=\"ds-kind\">Пакет для OpenWrt</p><h3 class=\"ds-title\"><a href=\"#\">Prokop</a></h3><p class=\"ds-sum\">Прозрачная маршрутизация и обход DPI для роутеров.</p><a class=\"ds-go\" href=\"#\">Сайт проекта →</a></div><dl class=\"ds-spec\"><div><dt>Статус</dt><dd><span class=\"ds-dot\"></span>Работает</dd></div><div><dt>Версия</dt><dd>2.32.0</dd></div></dl></div>",
+      "css": ".ds-row{display:grid;grid-template-columns:32px 64px minmax(0,1fr) 180px;gap:20px;padding:20px 0;border-bottom:1px solid #d6d2c8;background:#f3f1ec;color:#16161a;font-family:'Golos Text',sans-serif}.ds-num{font:13px 'JetBrains Mono',monospace;color:#6b685f;text-decoration:none}.ds-num:hover{color:#c4380f}.ds-plate{width:64px;height:64px;border:1px solid #d6d2c8;background:radial-gradient(#b3ae9f 1px,transparent 1.5px) 0 0/10px 10px}.ds-kind{margin:0 0 4px;font:12px 'JetBrains Mono',monospace;letter-spacing:.1em;text-transform:uppercase;color:#6b685f}.ds-title{margin:0 0 6px;font:700 24px/1.2 Unbounded,sans-serif}.ds-title a{color:inherit;text-decoration:none;background:linear-gradient(#ff4f1f,#ff4f1f) 0 100%/0 2px no-repeat;transition:background-size .25s ease}.ds-title a:hover,.ds-title a:focus-visible{background-size:100% 2px}.ds-sum{margin:0 0 10px;color:#4a4944;font-size:15px}.ds-go{font:500 13px 'JetBrains Mono',monospace;color:#c4380f;text-decoration:none}.ds-go:hover{text-decoration:underline}.ds-spec{margin:0;padding-left:16px;border-left:1px solid #d6d2c8;font-size:14px}.ds-spec div{display:grid;grid-template-columns:70px 1fr;gap:8px;padding:6px 0;border-bottom:1px dashed #d6d2c8}.ds-spec dt{font:11px 'JetBrains Mono',monospace;text-transform:uppercase;letter-spacing:.08em;color:#6b685f}.ds-spec dd{margin:0}.ds-dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:#2f9e5b;margin-right:8px}:focus-visible{outline:2px solid #c4380f;outline-offset:3px}"
+    },
+    {
+      "name": "Badge Новый",
+      "kind": "chip",
+      "refersTo": "badge-new",
+      "description": "Marks a project added within the last 30 days.",
+      "html": "<span class=\"ds-new\">Новый</span>",
+      "css": ".ds-new{display:inline-block;padding:3px 7px;background:#ff4f1f;color:#16161a;font:500 11px 'JetBrains Mono',monospace;letter-spacing:.08em}"
+    },
+    {
+      "name": "Action Link",
+      "kind": "button",
+      "refersTo": "link-action",
+      "description": "Primary project action: download or open the project site.",
+      "html": "<a class=\"ds-action\" href=\"#\">Скачать →</a>",
+      "css": ".ds-action{font:500 13px 'JetBrains Mono',monospace;color:#c4380f;text-decoration:none}.ds-action:hover{text-decoration:underline;text-underline-offset:3px}.ds-action:focus-visible{outline:2px solid #c4380f;outline-offset:3px}"
+    },
+    {
+      "name": "Top Bar",
+      "kind": "nav",
+      "description": "Sticky bar: orange square mark, wordmark, numbered mono nav.",
+      "html": "<nav class=\"ds-bar\"><a class=\"ds-mark\" href=\"#\"><span class=\"ds-sq\"></span>ASOFWAR</a><span class=\"ds-links\"><a href=\"#\"><span>01</span>Проекты</a><a href=\"#\"><span>02</span>Релизы</a><a href=\"#\"><span>03</span>Связь</a></span></nav>",
+      "css": ".ds-bar{display:flex;justify-content:space-between;align-items:center;min-height:56px;padding:0 24px;background:#f3f1ec;border-bottom:1px solid #d6d2c8;color:#16161a}.ds-mark{display:inline-flex;align-items:center;font:700 15px Unbounded,sans-serif;letter-spacing:.06em;color:inherit;text-decoration:none}.ds-sq{width:12px;height:12px;background:#ff4f1f;margin-right:10px}.ds-links{display:flex;gap:28px;font:13px 'JetBrains Mono',monospace}.ds-links a{color:inherit;text-decoration:none}.ds-links a:hover{color:#c4380f}.ds-links span{color:#6b685f;font-size:11px;margin-right:6px}"
+    },
+    {
+      "name": "Board",
+      "kind": "card",
+      "refersTo": "board",
+      "description": "Summary figures in a square ink frame.",
+      "html": "<dl class=\"ds-board\"><div><dt>Проектов</dt><dd>9</dd></div><div><dt>Релизов за 30 дней</dt><dd>84</dd></div></dl>",
+      "css": ".ds-board{display:grid;grid-template-columns:1fr 1fr;margin:0;border:1px solid #16161a;background:#f3f1ec;color:#16161a;max-width:340px}.ds-board div{display:flex;flex-direction:column;padding:16px 18px}.ds-board div+div{border-left:1px solid #16161a}.ds-board dt{font:11px 'JetBrains Mono',monospace;letter-spacing:.1em;text-transform:uppercase;color:#6b685f}.ds-board dd{margin:auto 0 0;padding-top:6px;font:700 40px/1.1 Unbounded,sans-serif}"
+    },
+    {
+      "name": "Ticker",
+      "kind": "custom",
+      "refersTo": "ticker",
+      "description": "Ink band of recent releases, like a departure board.",
+      "html": "<div class=\"ds-ticker\"><span><b>●</b> PROKOP 2.32.0 — 20.10.2026</span><span><b>●</b> FREEBRUSH 0.2.1 — 21.10.2026</span></div>",
+      "css": ".ds-ticker{display:flex;gap:48px;padding:14px 24px;background:#16161a;color:#f3f1ec;font:13px 'JetBrains Mono',monospace;letter-spacing:.06em;white-space:nowrap;overflow:hidden}.ds-ticker b{color:#ff4f1f;font-weight:400}"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Datasheet",
+    "overview": "The site reads like the technical datasheet of a component family: numbered positions, spec tables, hairline rules, a mono caption over every value. Each project is an item in an index, not a card in a gallery; its facts sit in a key/value table exactly as they would in a part's spec sheet. The visitor reads data, not adjectives. The mood is precise and restrained: generous whitespace, one accent, no decoration that does not carry information. The only ornaments are functional ones that belong to the datasheet world: a faint drafting grid behind the hero, a generative circuit plate per project, and a running release ticker. Dark mode is the same sheet printed in negative.",
+    "keyCharacteristics": [
+      "Paper, ink and one signal colour; status colours only as 8 px dots.",
+      "Three type voices: wide grotesk for names, humanist sans for prose, mono for every label and number.",
+      "Square corners everywhere, hairline and 2 px ink rules instead of boxes and shadows.",
+      "Numbered index rows with a fixed column grid (number, plate, text, spec).",
+      "Motion only where it signals life: ticker, a flowing trace on hover, a short reveal."
+    ],
+    "rules": [
+      { "name": "The One Signal Rule", "body": "Signal Orange is the only chromatic accent; it marks liveness and newness and covers a few percent of any screen. Status colours never grow beyond their dot.", "section": "colors" },
+      { "name": "The Small-Text Ink Rule", "body": "Orange text at body or label size always uses Signal Ink, never Signal Orange; Signal Orange is for fills, strokes, glyphs and display-size marks.", "section": "colors" },
+      { "name": "The Caption Rule", "body": "Every number, date, version, key and navigational link is set in JetBrains Mono; prose never is.", "section": "typography" },
+      { "name": "The Wide-for-Names Rule", "body": "Unbounded is reserved for names (the wordmark, section titles, project titles, the contact address, board figures). Never for running text or labels.", "section": "typography" },
+      { "name": "The Shared Column Rule", "body": "Everything that lists projects or releases sits on the index grid; a new list aligns to number / plate / text / spec rather than inventing its own columns.", "section": "layout" },
+      { "name": "The Flat Sheet Rule", "body": "Surfaces never lift. If something needs separation, draw a rule; if it needs emphasis, invert it to ink or mark it with Signal Orange.", "section": "elevation" }
+    ],
+    "dos": [
+      "Do keep every corner square (0 radius); only status dots and plate pads are round.",
+      "Do use Signal Ink (#c4380f light / #ff8a63 dark) for any orange text smaller than display size.",
+      "Do set every label, number, date, version and nav link in JetBrains Mono, and every name in Unbounded.",
+      "Do separate content with rules (1 px Rule hairlines, 2 px Ink section rules), not with boxes or shadows.",
+      "Do place new lists of projects or releases on the index grid (48 / 132 / fluid / 300 px, 32 px gaps).",
+      "Do give every motion a reduced-motion fallback and keep the page complete without JavaScript and in print."
+    ],
+    "donts": [
+      "Don't add box-shadows, gradients on surfaces, or rounded cards.",
+      "Don't introduce a second accent colour or use status colours beyond their 8 px dot.",
+      "Don't imitate the projectugarte.com look: centred hero with pill badge, soft rounded cards, generic portfolio grid.",
+      "Don't use publisher or game logos and brand imagery for projects built around other companies' games.",
+      "Don't set prose or summaries in mono, or labels in Unbounded."
+    ]
+  }
+}
